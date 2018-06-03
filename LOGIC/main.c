@@ -17,7 +17,15 @@ void main(void)
 	WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;		// stop watchdog timer
 
 	register_init();
-
+#if 0
+	while(1)
+	{
+	    delay_msec(10);
+	    set_test_motor_port(1u);
+	    __delay_cycles(100);
+	    set_test_motor_port(0u);
+	}
+#endif
 	register_enable_low_powermode();
 }
 
@@ -27,6 +35,10 @@ void main(void)
 Private void timer_10msec(void)
 {
     static U8 second_cnt = 0u;
+    //static U8 motor_state;
+
+    //motor_state = !motor_state;
+    //set_test_motor_port(motor_state);
 
     second_cnt++;
 
@@ -40,36 +52,7 @@ Private void timer_10msec(void)
 Private void timer_1sec(void)
 {
     static U8 led_state;
-    static U8 led_count;
 
     led_state = !led_state;
     set_led_one(led_state);
-
-
-    led_count++;
-    if(led_count >= 3u)
-    {
-        led_count = 0u;
-    }
-
-    switch(led_count)
-    {
-    case 0u:
-        set_led_two_blue(1u);
-        set_led_two_red(0u);
-        set_led_two_green(0u);
-        break;
-    case 1u:
-        set_led_two_blue(0u);
-        set_led_two_red(1u);
-        set_led_two_green(0u);
-        break;
-    case 2u:
-        set_led_two_blue(0u);
-        set_led_two_red(0u);
-        set_led_two_green(1u);
-        break;
-    default:
-        break;
-    }
 }
