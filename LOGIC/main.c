@@ -1,6 +1,7 @@
 #include "msp.h"
 #include "typedefs.h"
 #include "register.h"
+#include "uartmgr.h"
 
 
 /**
@@ -17,15 +18,13 @@ void main(void)
 	WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;		// stop watchdog timer
 
 	register_init();
-#if 0
+
 	while(1)
 	{
-	    delay_msec(10);
-	    set_test_motor_port(1u);
-	    __delay_cycles(100);
-	    set_test_motor_port(0u);
+	    /* Currently just continuously poll the USART module */
+	    uartmgr_cyclic();
 	}
-#endif
+
 	register_enable_low_powermode();
 }
 
@@ -35,10 +34,6 @@ void main(void)
 Private void timer_10msec(void)
 {
     static U8 second_cnt = 0u;
-    //static U8 motor_state;
-
-    //motor_state = !motor_state;
-    //set_test_motor_port(motor_state);
 
     second_cnt++;
 

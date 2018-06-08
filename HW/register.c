@@ -7,6 +7,7 @@
 
 
 #include "register.h"
+#include "uartmgr.h"
 #include <driverlib.h>
 
 /***************************** Private function forward declarations ********************/
@@ -64,6 +65,9 @@ Public void register_init(void)
 
     /* Initialize main timer */
     timer_init();
+
+    /* Initialize USART hardware. */
+    uartmgr_init();
 }
 
 
