@@ -14,7 +14,7 @@
 
 extern void uartmgr_send_char(char c);
 extern void uartmgr_send_str(const char * str);
-extern U8 uartmgr_receiveData(U8 * dest);
+extern U8 uartmgr_receiveData(char * dest);
 extern void uartmgr_send_number(long nr);
 extern void uartmgr_send_rn(void);
 extern void uartmgr_init(void);

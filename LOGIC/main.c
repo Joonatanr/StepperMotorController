@@ -2,7 +2,7 @@
 #include "typedefs.h"
 #include "register.h"
 #include "uartmgr.h"
-
+#include "stepper.h"
 
 /**
  * main.c
@@ -19,9 +19,20 @@ void main(void)
 
 	register_init();
 
+    /* Initialize USART hardware. */
+    uartmgr_init();
+
+    stepper_init();
+
 	while(1)
 	{
 	    /* Currently just continuously poll the USART module */
+	    /*
+	    delay_msec(1000);
+	    uartmgr_send_char('X');
+        delay_msec(1000);
+        uartmgr_send_char('O');
+    */
 	    uartmgr_cyclic();
 	}
 

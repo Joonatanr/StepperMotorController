@@ -13,9 +13,11 @@
 #include "typedefs.h"
 #include "uartmgr.h"
 #include "misc.h"
+#include "stepper.h"
+#include <stdlib.h>
 
 Private U8 priv_receive_buffer[UART_BUF_LEN];
-Private U8 priv_uart_buffer[UART_BUF_LEN];
+Private char priv_uart_buffer[UART_BUF_LEN];
 Private U8 priv_receive_cnt;
 Private U8 priv_receive_flag = 0;
 
@@ -101,7 +103,7 @@ Public void EUSCIA0_IRQHandler(void)
 }
 
 
-Public U8 uartmgr_receiveData(U8 * dest)
+Public U8 uartmgr_receiveData(char * dest)
 {
     //Return length of received data. If none received then return 0.
     U8 res = 0u;
@@ -120,6 +122,10 @@ Public U8 uartmgr_receiveData(U8 * dest)
 
 Public void uartmgr_init(void)
 {
+    /* Selecting P1.2 and P1.3 in UART mode */
+    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P1,
+            GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3, GPIO_PRIMARY_MODULE_FUNCTION);
+
     /* Configuring UART Module */
     MAP_UART_initModule(EUSCI_A0_BASE, &uartConfig);
 
@@ -140,7 +146,19 @@ Public void uartmgr_cyclic(void)
 
     if (msg_len > 0u)
     {
-        /* TODO : Process the message. */
+        if ((priv_uart_buffer[0] == 'T') && (priv_uart_buffer[1] != 0))
+        {
+            long parsedValue;
+            parsedValue = atoi(&priv_uart_buffer[1]);
+
+            if (parsedValue > 0)
+            {
+               stepper_setTimerValue(parsedValue);
+
+               uartmgr_send_str("OK");
+               uartmgr_send_rn();
+            }
+        }
     }
 }
 
