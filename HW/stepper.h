@@ -11,6 +11,7 @@
 #include "typedefs.h"
 
 extern void stepper_init(void);
+extern Boolean stepper_setSpeed(U32 rpm);
 extern void stepper_setTimerValue(U32 value);
 
 

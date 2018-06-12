@@ -71,10 +71,14 @@ Public void delay_msec(U16 msec)
 
 /***************************** Private function definitions ******************************/
 
+//#define CLOCK_FREQ 12u
+#define CLOCK_FREQ 24u
+
 Private void clocks_init(void)
 {
     WDT_A_holdTimer();
 
+#if (CLOCK_FREQ == 12u)
     //Lets configure the DCO to 12MHz
     CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_12);
 
@@ -86,6 +90,26 @@ Private void clocks_init(void)
     MAP_CS_initClockSignal(CS_MCLK,     CS_MODOSC_SELECT,   CS_CLOCK_DIVIDER_2);
     MAP_CS_initClockSignal(CS_HSMCLK,   CS_DCOCLK_SELECT,   CS_CLOCK_DIVIDER_2);
     MAP_CS_initClockSignal(CS_SMCLK,    CS_DCOCLK_SELECT,   CS_CLOCK_DIVIDER_1);
+#elif (CLOCK_FREQ == 24u)
+    /* Setting DCO to 24MHz (upping Vcore) */
+    FlashCtl_setWaitState(FLASH_BANK0, 2);
+    FlashCtl_setWaitState(FLASH_BANK1, 2);
+    MAP_PCM_setCoreVoltageLevel(PCM_VCORE1);
+    CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_24);
+
+    /* Initializing the clock source as follows:
+     *      MCLK =      DCO  =   24MHz
+     *      HSMCLK =    DCO/2 =  12Mhz
+     *      SMCLK =     DCO/2 =  12MHz
+     */
+
+    MAP_CS_initClockSignal(CS_MCLK,     CS_DCOCLK_SELECT,   CS_CLOCK_DIVIDER_1);
+    MAP_CS_initClockSignal(CS_HSMCLK,   CS_DCOCLK_SELECT,   CS_CLOCK_DIVIDER_2);
+    MAP_CS_initClockSignal(CS_SMCLK,    CS_DCOCLK_SELECT,   CS_CLOCK_DIVIDER_2);
+
+#else
+#error "Clock frequency not defined"
+#endif
 }
 
 

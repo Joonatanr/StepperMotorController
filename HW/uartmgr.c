@@ -16,12 +16,38 @@
 #include "stepper.h"
 #include <stdlib.h>
 
+
+/********************************************* Private definitions ************************************/
+
+typedef Boolean (*CommandHandlerFunc)(char * data, U8 len);
+
+typedef struct
+{
+    char prefix;
+    CommandHandlerFunc handler_fptr;
+} CommandHandler_T;
+
+
+/************************************* Private function prototypes ************************************/
+
+Private Boolean HandleCommandTimerSet(char * data, U8 len);
+Private Boolean HandleCommandRPMSet(char * data, U8 len);
+
+
+/************************************* Private data declarations **************************************/
+
 Private U8 priv_receive_buffer[UART_BUF_LEN];
 Private char priv_uart_buffer[UART_BUF_LEN];
 Private U8 priv_receive_cnt;
 Private U8 priv_receive_flag = 0;
-
 Private char priv_char_buf[16];
+
+Private const CommandHandler_T priv_command_handlers[] =
+{
+     { .prefix = 'T', .handler_fptr = HandleCommandTimerSet },
+     { .prefix = 'R', .handler_fptr = HandleCommandRPMSet   }
+};
+
 
 /* Set to 9600 baudrate */
 /* TODO : Review this.  */
@@ -141,25 +167,76 @@ Public void uartmgr_init(void)
 Public void uartmgr_cyclic(void)
 {
     U8 msg_len;
+    U8 ix;
+    Boolean res = FALSE;
 
     msg_len = uartmgr_receiveData(priv_uart_buffer);
 
     if (msg_len > 0u)
     {
-        if ((priv_uart_buffer[0] == 'T') && (priv_uart_buffer[1] != 0))
+        for (ix = 0u; ix < NUMBER_OF_ITEMS(priv_command_handlers); ix++)
         {
-            long parsedValue;
-            parsedValue = atoi(&priv_uart_buffer[1]);
-
-            if (parsedValue > 0)
+            if (priv_uart_buffer[0] == priv_command_handlers[ix].prefix)
             {
-               stepper_setTimerValue(parsedValue);
-
-               uartmgr_send_str("OK");
-               uartmgr_send_rn();
+               res = priv_command_handlers[ix].handler_fptr(priv_uart_buffer + 1, msg_len - 1u);
+               break;
             }
+        }
+
+        if (res)
+        {
+            /* Send positive response */
+            uartmgr_send_str("OK");
+            uartmgr_send_rn();
+        }
+        else
+        {
+           /* Send error response   */
+            uartmgr_send_str("ERR");
+            uartmgr_send_rn();
         }
     }
 }
+
+
+/********************************* Command handlers ********************************/
+
+Private Boolean HandleCommandTimerSet(char * data, U8 len)
+{
+    Boolean res = FALSE;
+    long parsedValue;
+
+    if (len > 0u)
+    {
+        parsedValue = atol(data);
+
+        if (parsedValue > 0)
+        {
+            stepper_setTimerValue(parsedValue);
+            res = TRUE;
+        }
+    }
+
+    return res;
+}
+
+
+Private Boolean HandleCommandRPMSet(char * data, U8 len)
+{
+    Boolean res = FALSE;
+    int parsedValue;
+
+    if (len > 0u)
+    {
+        parsedValue = atoi(data);
+        if (parsedValue >= 0)
+        {
+            res = stepper_setSpeed((U32)parsedValue);
+        }
+    }
+
+    return res;
+}
+
 
 
