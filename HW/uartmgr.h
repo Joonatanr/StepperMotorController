@@ -12,6 +12,10 @@
 
 #define UART_BUF_LEN 32
 
+typedef Boolean (*UartCommandHandler)(char *buf, U16 msg_len);
+
+extern void uartmgr_setCallbackPtr(UartCommandHandler handler);
+
 extern void uartmgr_send_char(char c);
 extern void uartmgr_send_str(const char * str);
 extern U8 uartmgr_receiveData(char * dest);

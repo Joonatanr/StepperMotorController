@@ -3,6 +3,7 @@
 #include "register.h"
 #include "uartmgr.h"
 #include "stepper.h"
+#include "commandHandler.h"
 
 /**
  * main.c
@@ -22,7 +23,14 @@ void main(void)
     /* Initialize USART hardware. */
     uartmgr_init();
 
+    /* Initialize logic layer. */
+    commandHandler_init();
+
     stepper_init();
+
+    set_led_two_blue(0u);
+    set_led_two_green(0u);
+    set_led_two_red(0u);
 
 	while(1)
 	{

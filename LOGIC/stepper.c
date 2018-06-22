@@ -34,11 +34,14 @@ StepperState_T myStepper =
 {
      .microstepping_mode = NUMBER_OF_MICROSTEPS,
      .microsteps_per_round = NUMBER_OF_MICROSTEPS * NUMBER_OF_FULL_STEPS_PER_ROUND,
-     .max_speed = 300u,
+     .max_speed = 1000u,
      .target_speed = 0u
 };
 
 #define STEPPER_TIMER_FREQUENCY 3000000u /* 3 MHz */
+
+
+
 
 //Lo priority timer for motor This is currently used for motor tests.
 Private const Timer_A_UpModeConfig stepper_timer_config =
@@ -119,9 +122,16 @@ Public void stepper_setTimerValue(U32 value)
 //This is motor prio interrupt handler.
 Private void TA1_0_IRQHandler(void)
 {
-    //static U8 motor_state = 0u;
-    //static U8 led_count = 0u;
     Timer_A_clearCaptureCompareInterrupt(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_0);
+
+    if (myStepper.target_speed > 0u)
+    {
+        set_test_motor_port(1u);
+
+        /* Should be a 2 microsecond delay in here. */
+        __delay_cycles(50); //TODO : Measure how long this period actually is...
+        set_test_motor_port(0u);
+    }
 
 #if 0
     led_count++;
@@ -151,11 +161,4 @@ Private void TA1_0_IRQHandler(void)
         break;
     }
 #endif
-
-    if (myStepper.target_speed > 0u)
-    {
-        set_test_motor_port(1u);
-        __delay_cycles(25);
-        set_test_motor_port(0u);
-    }
 }

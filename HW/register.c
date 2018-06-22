@@ -19,8 +19,11 @@ Private void clocks_init(void);
 /* Interrupt handlers */
 Private void TA0_0_IRQHandler(void);
 
+Private void test32BitTimerInterrupt(void);
+
 
 /***************************** Private variable declarations ****************************/
+
 
 //Hi priority timer runs at 10msec interval.
 Private const Timer_A_UpModeConfig hi_prio_timer_config =
@@ -115,6 +118,8 @@ Private void clocks_init(void)
 
 Private void timer_init(void)
 {
+    /* TODO : Switch to 32 bit timer for the main scheduler.*/
+
     //Set up timer 0
 
     //Set up timer for high priority interrupts.
@@ -126,6 +131,39 @@ Private void timer_init(void)
     //Interrupt_setPriority(INT_TA0_0, 254u);
     Interrupt_setPriority(INT_TA0_0, 4u); /* TODO : 4U has been chosen quite randomly... */
     Interrupt_enableInterrupt(INT_TA0_0);
+
+
+    /* Set up the 32-bit timer for testing... */
+
+    /* Main clock is at 24MHz                           */
+    /* Set up the 32 bit timer for 10msec interrupts    */
+
+    Timer32_initModule(TIMER32_BASE, TIMER32_PRESCALER_16, TIMER32_32BIT, TIMER32_PERIODIC_MODE);
+    Timer32_registerInterrupt(TIMER32_0_INTERRUPT, test32BitTimerInterrupt);
+
+    Timer32_setCount(TIMER32_0_BASE, 15000u);
+
+    Timer32_startTimer(TIMER32_0_BASE, FALSE);
+
+}
+
+
+Private void test32BitTimerInterrupt(void)
+{
+    static U8 counter;
+    static U8 led_state;
+
+    Timer32_clearInterruptFlag(TIMER32_0_BASE);
+
+    if (++counter >= 100u)
+    {
+        counter = 0u;
+        led_state = !led_state;
+
+        set_led_two_blue(led_state);
+
+    }
+
 }
 
 

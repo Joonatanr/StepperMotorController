@@ -13,25 +13,12 @@
 #include "typedefs.h"
 #include "uartmgr.h"
 #include "misc.h"
-#include "stepper.h"
 #include <stdlib.h>
-
-
-/********************************************* Private definitions ************************************/
-
-typedef Boolean (*CommandHandlerFunc)(char * data, U8 len);
-
-typedef struct
-{
-    char prefix;
-    CommandHandlerFunc handler_fptr;
-} CommandHandler_T;
 
 
 /************************************* Private function prototypes ************************************/
 
-Private Boolean HandleCommandTimerSet(char * data, U8 len);
-Private Boolean HandleCommandRPMSet(char * data, U8 len);
+
 
 
 /************************************* Private data declarations **************************************/
@@ -42,15 +29,9 @@ Private U8 priv_receive_cnt;
 Private U8 priv_receive_flag = 0;
 Private char priv_char_buf[16];
 
-Private const CommandHandler_T priv_command_handlers[] =
-{
-     { .prefix = 'T', .handler_fptr = HandleCommandTimerSet },
-     { .prefix = 'R', .handler_fptr = HandleCommandRPMSet   }
-};
-
+Private UartCommandHandler priv_cmd_handler_ptr = NULL;
 
 /* Set to 9600 baudrate */
-/* TODO : Review this.  */
 Private const eUSCI_UART_Config uartConfig =
 {
         EUSCI_A_UART_CLOCKSOURCE_SMCLK,          // SMCLK Clock Source
@@ -63,6 +44,31 @@ Private const eUSCI_UART_Config uartConfig =
         EUSCI_A_UART_MODE,                       // UART mode
         EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION  // Oversampling
 };
+
+
+Public void uartmgr_init(void)
+{
+    /* Selecting P1.2 and P1.3 in UART mode */
+    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P1,
+            GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3, GPIO_PRIMARY_MODULE_FUNCTION);
+
+    /* Configuring UART Module */
+    MAP_UART_initModule(EUSCI_A0_BASE, &uartConfig);
+
+    /* Enable UART module */
+    MAP_UART_enableModule(EUSCI_A0_BASE);
+
+    /* Enabling interrupts */
+    MAP_UART_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
+    MAP_Interrupt_enableInterrupt(INT_EUSCIA0);
+}
+
+
+Public void uartmgr_setCallbackPtr(UartCommandHandler handler)
+{
+    priv_cmd_handler_ptr = handler;
+}
+
 
 Public void uartmgr_send_char(char c)
 {
@@ -146,41 +152,18 @@ Public U8 uartmgr_receiveData(char * dest)
 }
 
 
-Public void uartmgr_init(void)
-{
-    /* Selecting P1.2 and P1.3 in UART mode */
-    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P1,
-            GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3, GPIO_PRIMARY_MODULE_FUNCTION);
-
-    /* Configuring UART Module */
-    MAP_UART_initModule(EUSCI_A0_BASE, &uartConfig);
-
-    /* Enable UART module */
-    MAP_UART_enableModule(EUSCI_A0_BASE);
-
-    /* Enabling interrupts */
-    MAP_UART_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
-    MAP_Interrupt_enableInterrupt(INT_EUSCIA0);
-}
-
-
 Public void uartmgr_cyclic(void)
 {
     U8 msg_len;
-    U8 ix;
     Boolean res = FALSE;
 
     msg_len = uartmgr_receiveData(priv_uart_buffer);
 
     if (msg_len > 0u)
     {
-        for (ix = 0u; ix < NUMBER_OF_ITEMS(priv_command_handlers); ix++)
+        if (priv_cmd_handler_ptr != NULL)
         {
-            if (priv_uart_buffer[0] == priv_command_handlers[ix].prefix)
-            {
-               res = priv_command_handlers[ix].handler_fptr(priv_uart_buffer + 1, msg_len - 1u);
-               break;
-            }
+            res = priv_cmd_handler_ptr(priv_uart_buffer, msg_len);
         }
 
         if (res)
@@ -199,44 +182,6 @@ Public void uartmgr_cyclic(void)
 }
 
 
-/********************************* Command handlers ********************************/
-
-Private Boolean HandleCommandTimerSet(char * data, U8 len)
-{
-    Boolean res = FALSE;
-    long parsedValue;
-
-    if (len > 0u)
-    {
-        parsedValue = atol(data);
-
-        if (parsedValue > 0)
-        {
-            stepper_setTimerValue(parsedValue);
-            res = TRUE;
-        }
-    }
-
-    return res;
-}
-
-
-Private Boolean HandleCommandRPMSet(char * data, U8 len)
-{
-    Boolean res = FALSE;
-    int parsedValue;
-
-    if (len > 0u)
-    {
-        parsedValue = atoi(data);
-        if (parsedValue >= 0)
-        {
-            res = stepper_setSpeed((U32)parsedValue);
-        }
-    }
-
-    return res;
-}
 
 
 
