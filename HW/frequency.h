@@ -11,6 +11,7 @@
 #include "typedefs.h"
 
 extern void frequency_init(void);
+extern void frequency_setInterval(U16 interval);
 
 
 

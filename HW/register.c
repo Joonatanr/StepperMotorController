@@ -112,7 +112,7 @@ Private void timer_init(void)
     Timer32_initModule(TIMER32_BASE, TIMER32_PRESCALER_16, TIMER32_32BIT, TIMER32_PERIODIC_MODE);
     Timer32_registerInterrupt(TIMER32_0_INTERRUPT, mainTimerInterrupt);
 
-    Timer32_setCount(TIMER32_0_BASE, 1500u);
+    Timer32_setCount(TIMER32_0_BASE, 15000u);
     Timer32_startTimer(TIMER32_0_BASE, FALSE);
 
 }

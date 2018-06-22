@@ -4,6 +4,7 @@
 #include "uartmgr.h"
 #include "stepper.h"
 #include "commandHandler.h"
+#include "frequency.h"
 
 /**
  * main.c
@@ -22,6 +23,9 @@ void main(void)
 
     /* Initialize USART hardware. */
     uartmgr_init();
+
+    /* Initialize frequency generator */
+    frequency_init(),
 
     /* Initialize logic layer. */
     commandHandler_init();
