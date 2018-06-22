@@ -22,6 +22,7 @@ typedef struct
     CommandHandlerFunc handler_fptr;
 } CommandHandler_T;
 
+
 /************************************* Private function prototypes ************************************/
 
 Private Boolean HandleCommandTimerSet(char * data, U8 len);
@@ -30,6 +31,9 @@ Private Boolean handleCommand(char * cmd, U16 msg_len);
 
 
 /************************************ Private variable definitions ***********************************/
+
+Public UartCommandHandler CmdHandlerFunc = handleCommand;
+
 
 Private const CommandHandler_T priv_command_handlers[] =
 {
@@ -44,7 +48,7 @@ Private const CommandHandler_T priv_command_handlers[] =
 
 Public void commandHandler_init(void)
 {
-    uartmgr_setCallbackPtr(handleCommand);
+
 }
 
 

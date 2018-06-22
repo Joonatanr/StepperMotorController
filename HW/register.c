@@ -16,25 +16,11 @@ Private void timer_init(void);
 Private void ports_init(void);
 Private void clocks_init(void);
 
-/* Interrupt handlers */
-Private void TA0_0_IRQHandler(void);
-
-Private void test32BitTimerInterrupt(void);
+Private void mainTimerInterrupt(void);
 
 
 /***************************** Private variable declarations ****************************/
 
-
-//Hi priority timer runs at 10msec interval.
-Private const Timer_A_UpModeConfig hi_prio_timer_config =
-{
-     .captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE, /* We enable capture compare, since this is a periodic timer. */
-     .clockSource = TIMER_A_CLOCKSOURCE_SMCLK,
-     .clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_16, //Currently divided by 16.
-     .timerClear = TIMER_A_DO_CLEAR,
-     .timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE, //Disable general interrupt.
-     .timerPeriod = 7500u
-};
 
 
 Private volatile U16 priv_delay_counter = 0u;
@@ -68,7 +54,7 @@ Public void register_enable_low_powermode(void)
 #pragma FUNCTION_OPTIONS(delay_msec, "--opt_level=off")
 Public void delay_msec(U16 msec)
 {
-    priv_delay_counter = msec / 10;
+    priv_delay_counter = msec;
     while(priv_delay_counter > 0u);
 }
 
@@ -118,50 +104,35 @@ Private void clocks_init(void)
 
 Private void timer_init(void)
 {
-    /* TODO : Switch to 32 bit timer for the main scheduler.*/
-
-    //Set up timer 0
-
-    //Set up timer for high priority interrupts.
-    Timer_A_configureUpMode(TIMER_A0_BASE, &hi_prio_timer_config);
-    Timer_A_registerInterrupt(TIMER_A0_BASE, TIMER_A_CCR0_INTERRUPT, TA0_0_IRQHandler);
-    Timer_A_startCounter(TIMER_A0_BASE, TIMER_A_UP_MODE);
-
-    //Enable this interrupt in NVIC.
-    //Interrupt_setPriority(INT_TA0_0, 254u);
-    Interrupt_setPriority(INT_TA0_0, 4u); /* TODO : 4U has been chosen quite randomly... */
-    Interrupt_enableInterrupt(INT_TA0_0);
-
-
-    /* Set up the 32-bit timer for testing... */
+    /* Set up the 32-bit timer */
 
     /* Main clock is at 24MHz                           */
     /* Set up the 32 bit timer for 10msec interrupts    */
 
     Timer32_initModule(TIMER32_BASE, TIMER32_PRESCALER_16, TIMER32_32BIT, TIMER32_PERIODIC_MODE);
-    Timer32_registerInterrupt(TIMER32_0_INTERRUPT, test32BitTimerInterrupt);
+    Timer32_registerInterrupt(TIMER32_0_INTERRUPT, mainTimerInterrupt);
 
-    Timer32_setCount(TIMER32_0_BASE, 15000u);
-
+    Timer32_setCount(TIMER32_0_BASE, 1500u);
     Timer32_startTimer(TIMER32_0_BASE, FALSE);
 
 }
 
 
-Private void test32BitTimerInterrupt(void)
+/* Called every 1 msec */
+Private void mainTimerInterrupt(void)
 {
     static U8 counter;
-    static U8 led_state;
 
     Timer32_clearInterruptFlag(TIMER32_0_BASE);
 
-    if (++counter >= 100u)
+    if (priv_delay_counter > 0u)
     {
-        counter = 0u;
-        led_state = !led_state;
+        priv_delay_counter--;
+    }
 
-        set_led_two_blue(led_state);
-
+    if (++counter >= 10u)
+    {
+        timer_10msec_callback();
     }
 
 }
@@ -176,21 +147,6 @@ Private void ports_init(void)
     //Set test motor pin as output.
     GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN2);
 }
-
-
-/* This should be fired every 10 msec */
-//Hi priority interrupt handler.
-Private void TA0_0_IRQHandler(void)
-{
-    Timer_A_clearCaptureCompareInterrupt(TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_0);
-    if (priv_delay_counter > 0u)
-    {
-        priv_delay_counter--;
-    }
-
-    timer_10msec_callback();
-}
-
 
 
 /****************************************************************************************

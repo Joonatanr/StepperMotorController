@@ -14,7 +14,7 @@
 
 typedef Boolean (*UartCommandHandler)(char *buf, U16 msg_len);
 
-extern void uartmgr_setCallbackPtr(UartCommandHandler handler);
+extern UartCommandHandler CmdHandlerFunc;
 
 extern void uartmgr_send_char(char c);
 extern void uartmgr_send_str(const char * str);

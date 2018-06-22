@@ -5,6 +5,8 @@
  *      Author: JRE
  */
 
+/* The purpose of this module is to drive 4 separate PWM channels and generate frequency signals. */
+
 
 #include "frequency.h"
 

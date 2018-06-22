@@ -29,7 +29,7 @@ Private U8 priv_receive_cnt;
 Private U8 priv_receive_flag = 0;
 Private char priv_char_buf[16];
 
-Private UartCommandHandler priv_cmd_handler_ptr = NULL;
+
 
 /* Set to 9600 baudrate */
 Private const eUSCI_UART_Config uartConfig =
@@ -61,12 +61,6 @@ Public void uartmgr_init(void)
     /* Enabling interrupts */
     MAP_UART_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
     MAP_Interrupt_enableInterrupt(INT_EUSCIA0);
-}
-
-
-Public void uartmgr_setCallbackPtr(UartCommandHandler handler)
-{
-    priv_cmd_handler_ptr = handler;
 }
 
 
@@ -161,9 +155,9 @@ Public void uartmgr_cyclic(void)
 
     if (msg_len > 0u)
     {
-        if (priv_cmd_handler_ptr != NULL)
+        if (CmdHandlerFunc != NULL)
         {
-            res = priv_cmd_handler_ptr(priv_uart_buffer, msg_len);
+            res = CmdHandlerFunc(priv_uart_buffer, msg_len);
         }
 
         if (res)
