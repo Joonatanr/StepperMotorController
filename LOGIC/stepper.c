@@ -15,66 +15,110 @@
 
 
 
-
 /***************************Private variable declarations *************************************/
 
 
-#define NUMBER_OF_MICROSTEPS 8u
+#define DEFAULT_MICROSTEPPING_MODE 8u
 #define NUMBER_OF_FULL_STEPS_PER_ROUND 200u
+#define STEPPER_TIMER_FREQUENCY 3000000u /* 3 MHz */
 
 typedef struct
 {
-    const U8    microstepping_mode; //For now this cannot be changed during runtime.
-    U16         microsteps_per_round;
+    U32 port;
+    U32 pin;
+} Stepper_IOPort_t;
 
-    const U16   max_speed;
-    U16         target_speed;
+typedef struct
+{
+    Stepper_IOPort_t    reset_pin;
+    Stepper_IOPort_t    sleep_pin;
+
+    frequency_Channel_t frq_ch;
+    const U8            microstepping_mode; //  For now this cannot be changed during runtime.
+    const U16           max_speed;          //  In RPM
+} StepperConf_t;
+
+
+typedef struct
+{
+    const StepperConf_t *   conf;
+
+    U16                     microsteps_per_round;
+    U16                     target_speed;
 } StepperState_T;
 
 
-StepperState_T myStepper =
+Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
 {
-     .microstepping_mode = NUMBER_OF_MICROSTEPS,
-     .microsteps_per_round = NUMBER_OF_MICROSTEPS * NUMBER_OF_FULL_STEPS_PER_ROUND,
-     .max_speed = 1000u,
-     .target_speed = 0u
+     { /* Stepper 1 */
+       .reset_pin = {GPIO_PORT_P5, GPIO_PIN6},
+       .sleep_pin = {GPIO_PORT_P2, GPIO_PIN6},
+       .frq_ch = FRQ_CH1,
+       .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
+       .max_speed = 1000u
+     }
+ /* TODO : Add all other stepper motors. */
+
 };
 
-#define STEPPER_TIMER_FREQUENCY 3000000u /* 3 MHz */
+Private StepperState_T priv_stepper_state[NUMBER_OF_STEPPERS];
+
 
 
 /************************** Public function definitions **************************************/
 
 Public void stepper_init(void)
 {
-    //Initialize reset and sleep pins.
-    GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN6);
+    U8 stepper;
 
-    //Initially we set these high.
-    GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6);
+    /* 1. Initialize HW pins */
+    for (stepper = 0u; stepper < NUMBER_OF_STEPPERS; stepper++)
+    {
+        GPIO_setAsOutputPin(priv_stepper_conf[stepper].reset_pin.port, priv_stepper_conf[stepper].reset_pin.pin);
+        GPIO_setAsOutputPin(priv_stepper_conf[stepper].sleep_pin.port, priv_stepper_conf[stepper].sleep_pin.pin);
+
+        /* Set sleep and reset pins high initally */
+        GPIO_setOutputHighOnPin(priv_stepper_conf[stepper].reset_pin.port, priv_stepper_conf[stepper].reset_pin.pin);
+        GPIO_setOutputHighOnPin(priv_stepper_conf[stepper].sleep_pin.port, priv_stepper_conf[stepper].sleep_pin.pin);
+    }
+
+    /* 2. Initialize stepper states */
+    for (stepper = 0u; stepper < NUMBER_OF_STEPPERS; stepper++)
+    {
+        priv_stepper_state[stepper].conf = &priv_stepper_conf[stepper];
+        priv_stepper_state[stepper].microsteps_per_round = priv_stepper_conf[stepper].microstepping_mode * NUMBER_OF_FULL_STEPS_PER_ROUND;
+        priv_stepper_state[stepper].target_speed = 0u;
+    }
 }
 
 
-Public Boolean stepper_setSpeed(U32 rpm)
+Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
 {
     U32 microsteps_per_minute;
     U32 value;
     Boolean res = FALSE;
 
-    if (rpm <= myStepper.max_speed)
-    {
-        myStepper.target_speed = rpm;
+    StepperState_T * state_ptr = &priv_stepper_state[id];
+    const StepperConf_t * conf_ptr = state_ptr->conf;
 
-        microsteps_per_minute = rpm * myStepper.microsteps_per_round;
+    if (conf_ptr == NULL)
+    {
+        //Something has gone seriously wrong.
+        return FALSE;
+    }
+
+    if (rpm <= conf_ptr->max_speed)
+    {
+        state_ptr->target_speed = rpm;
+
+        microsteps_per_minute = rpm * state_ptr->microsteps_per_round;
         value = STEPPER_TIMER_FREQUENCY * 60u;
         value = value / microsteps_per_minute;
 
         /* TODO : Should set a minimum value for this, otherwise the timer will freeze the system with too low values... */
         if (value > 20u) /* Current value is quite arbitrarily chosen. */
         {
-            stepper_setTimerValue(value);
+            stepper_setTimerValue(value, id);
         }
 
         res = TRUE;
@@ -85,14 +129,14 @@ Public Boolean stepper_setSpeed(U32 rpm)
 
 
 /* TODO : This is temporary, in the future should set speed in other units. */
-Public void stepper_setTimerValue(U32 value)
+Public void stepper_setTimerValue(U32 value, Stepper_Id id)
 {
-    frequency_setInterval(value, FRQ_CH1);
+    frequency_setInterval(value, priv_stepper_conf[id].frq_ch);
 }
 
 
-
 /********************* Private function definitions ******************************************/
+
 
 
 

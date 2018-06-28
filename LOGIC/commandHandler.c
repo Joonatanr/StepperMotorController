@@ -85,7 +85,7 @@ Private Boolean HandleCommandTimerSet(char * data, U8 len)
 
         if (parsedValue > 0)
         {
-            stepper_setTimerValue(parsedValue);
+            stepper_setTimerValue(parsedValue, STEPPER1);
             res = TRUE;
         }
     }
@@ -104,7 +104,7 @@ Private Boolean HandleCommandRPMSet(char * data, U8 len)
         parsedValue = atoi(data);
         if (parsedValue >= 0)
         {
-            res = stepper_setSpeed((U32)parsedValue);
+            res = stepper_setSpeed((U32)parsedValue, STEPPER1);
         }
     }
 
