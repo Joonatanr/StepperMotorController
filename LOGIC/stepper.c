@@ -87,7 +87,7 @@ Public Boolean stepper_setSpeed(U32 rpm)
 /* TODO : This is temporary, in the future should set speed in other units. */
 Public void stepper_setTimerValue(U32 value)
 {
-    frequency_setInterval(value);
+    frequency_setInterval(value, FRQ_CH1);
 }
 
 

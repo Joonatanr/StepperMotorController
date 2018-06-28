@@ -11,36 +11,65 @@
 #include "frequency.h"
 #include "driverlib.h"
 
-/* Timer_A PWM Configuration Parameter */
-Timer_A_PWMConfig pwmConfig =
+
+typedef struct
 {
-        TIMER_A_CLOCKSOURCE_SMCLK,          /* Clocked at 12MHz     */
-        TIMER_A_CLOCKSOURCE_DIVIDER_4,      /* Currently at 3MHz    */
-        32000,                              /* This is arbitrary    */
-        TIMER_A_CAPTURECOMPARE_REGISTER_1,  /* Output is P2.4       */
-        TIMER_A_OUTPUTMODE_RESET_SET,
-        16000
+    U32               timer;
+    U8                ccr;
+    U32               port;
+    U32               pin;
+} ChannelConfig_t;
+
+Private const ChannelConfig_t   priv_freq_conf[FRQ_NUMBER_OF_CHANNELS] =
+{
+     { TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P2, GPIO_PIN4 },
+     { TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P7, GPIO_PIN4 }, /* TODO : Check if this is correct pin */
+     { TIMER_A2_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P6, GPIO_PIN7 }, /* TODO : Check if this is correct pin */
+     { TIMER_A3_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P9, GPIO_PIN2 }  /* TODO : Check if this is correct pin */
 };
+
+
+Private Timer_A_PWMConfig       priv_freq_pwm_cfg[FRQ_NUMBER_OF_CHANNELS];
+
 
 /* Initially lets just test this with a single channel... */
 Public void frequency_init(void)
 {
-    /* Configuring GPIO2.4 as peripheral output for PWM */
-    MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P2, GPIO_PIN4,
-            GPIO_PRIMARY_MODULE_FUNCTION);
+    U8 ix;
 
-    frequency_setInterval(1600);
+    /* Initialize PWM structs. */
+    for (ix = 0u; ix < FRQ_NUMBER_OF_CHANNELS; ix++)
+    {
+        priv_freq_pwm_cfg[ix].clockSource = TIMER_A_CLOCKSOURCE_SMCLK;
+        priv_freq_pwm_cfg[ix].clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_4;
+        priv_freq_pwm_cfg[ix].timerPeriod = 32000u; /* TODO : This is arbitrarily chosen, might not be necessary */
+        priv_freq_pwm_cfg[ix].compareRegister = priv_freq_conf[ix].ccr;
+        priv_freq_pwm_cfg[ix].compareOutputMode = TIMER_A_OUTPUTMODE_RESET_SET;
+        priv_freq_pwm_cfg[ix].dutyCycle = 16000u; /* TODO : This is arbitrarily chosen, might not be necessary */
+    }
 
+
+    /* Initialize output pins */
+    for (ix = 0u; ix < FRQ_NUMBER_OF_CHANNELS; ix++)
+    {
+        MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(priv_freq_conf[ix].port, priv_freq_conf[ix].pin,
+                GPIO_PRIMARY_MODULE_FUNCTION);
+    }
+
+    //frequency_setInterval(1600);
 }
 
 
-Public void frequency_setInterval(U16 interval)
+Public void frequency_setInterval(U16 interval, frequency_Channel_t ch)
 {
     /* Since this is a frequency generator then the duty cycle will always be 50% s*/
-    pwmConfig.timerPeriod = interval;
-    pwmConfig.dutyCycle = interval >> 1u;
+    Timer_A_PWMConfig * conf_ptr;
 
-    MAP_Timer_A_generatePWM(TIMER_A0_BASE, &pwmConfig);
+    conf_ptr = &priv_freq_pwm_cfg[ch];
+    conf_ptr->timerPeriod = interval;
+    conf_ptr->dutyCycle = interval >> 1u;
+
+    MAP_Timer_A_generatePWM(priv_freq_conf[ch].timer, conf_ptr);
 }
 
 

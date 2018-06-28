@@ -10,8 +10,17 @@
 
 #include "typedefs.h"
 
+typedef enum
+{
+    FRQ_CH1,
+    FRQ_CH2,
+    FRQ_CH3,
+    FRQ_CH4,
+    FRQ_NUMBER_OF_CHANNELS
+} frequency_Channel_t;
+
 extern void frequency_init(void);
-extern void frequency_setInterval(U16 interval);
+extern void frequency_setInterval(U16 interval, frequency_Channel_t ch);
 
 
 
