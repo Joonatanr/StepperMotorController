@@ -21,6 +21,7 @@ typedef enum
 
 extern void frequency_init(void);
 extern void frequency_setInterval(U16 interval, frequency_Channel_t ch);
+extern void frequency_setEnable(Boolean mode, frequency_Channel_t ch);
 
 
 

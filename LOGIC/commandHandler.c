@@ -133,7 +133,7 @@ Private Boolean HandleCommandToStepper(char * data, U8 len)
                 if (priv_subfunctions[ix].prefix == subcmd)
                 {
                     int arg = atoi(ps);
-                    priv_subfunctions[ix].handler_fptr((Stepper_Id)stepper_id, arg);
+                    res = priv_subfunctions[ix].handler_fptr((Stepper_Id)stepper_id, arg);
                     break;
                 }
             }

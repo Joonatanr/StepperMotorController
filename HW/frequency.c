@@ -73,4 +73,20 @@ Public void frequency_setInterval(U16 interval, frequency_Channel_t ch)
 }
 
 
+Public void frequency_setEnable(Boolean mode, frequency_Channel_t ch)
+{
+    Timer_A_PWMConfig * conf_ptr;
+    conf_ptr = &priv_freq_pwm_cfg[ch];
+
+    if (mode == TRUE)
+    {
+        MAP_Timer_A_generatePWM(priv_freq_conf[ch].timer, conf_ptr);
+    }
+    else
+    {
+        MAP_Timer_A_stopTimer(priv_freq_conf[ch].timer);
+    }
+}
+
+
 

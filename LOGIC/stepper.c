@@ -13,6 +13,7 @@
 
 /************************** Private function forward declarations *****************************/
 
+Private void stopStepper(Stepper_Id id);
 
 
 /***************************Private variable declarations *************************************/
@@ -135,7 +136,11 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
         return FALSE;
     }
 
-    if (rpm <= conf_ptr->max_speed)
+    if (rpm == 0)
+    {
+        stopStepper(id);
+    }
+    else if (rpm <= conf_ptr->max_speed)
     {
         state_ptr->target_speed = rpm;
 
@@ -165,6 +170,11 @@ Public void stepper_setTimerValue(U32 value, Stepper_Id id)
 
 /********************* Private function definitions ******************************************/
 
+Private void stopStepper(Stepper_Id id)
+{
+    /* TODO : Should also drive enable, sleep pins etc. */
+    frequency_setEnable(FALSE, priv_stepper_conf[id].frq_ch);
+}
 
 
 
