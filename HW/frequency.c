@@ -23,9 +23,9 @@ typedef struct
 Private const ChannelConfig_t   priv_freq_conf[FRQ_NUMBER_OF_CHANNELS] =
 {
      { TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P2, GPIO_PIN4 },
-     { TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P7, GPIO_PIN4 }, /* TODO : Check if this is correct pin */
-     { TIMER_A2_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P6, GPIO_PIN7 }, /* TODO : Check if this is correct pin */
-     { TIMER_A3_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P9, GPIO_PIN2 }  /* TODO : Check if this is correct pin */
+     { TIMER_A2_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_2, GPIO_PORT_P5, GPIO_PIN7 }, /* TODO : Check if this is correct pin */
+     { TIMER_A3_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_2, GPIO_PORT_P8, GPIO_PIN2 }, /* TODO : Check if this is correct pin */
+     { TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_3, GPIO_PORT_P7, GPIO_PIN5 }  /* TODO : Check if this is correct pin */
 };
 
 
