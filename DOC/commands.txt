@@ -1,0 +1,24 @@
+T - Set timer interval directly (for debugging only)
+
+Example : T200 (Sets timer interval to 200 units)
+
+R - Set RPM directly for stepper 1 (for debugging only)
+
+Example : R180 (Sets stepper 1 to 180 RPM)
+
+
+Q - Query stepper states
+
+
+Stepper Command format:
+
+S1 - Stepper ID
+
+R - Subcommand (Set RPM)
+
+200 - Argument (200 RPM)
+
+S1R200
+
+
+

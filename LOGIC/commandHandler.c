@@ -10,6 +10,7 @@
 #include "uartmgr.h"
 #include "stepper.h"
 #include <stdlib.h>
+#include "misc.h"
 
 
 /********************************************* Private definitions ************************************/
@@ -65,6 +66,12 @@ Private const SubFunc_T priv_subfunctions[] =
 };
 
 
+#define MAX_RESPONSE_LENGTH 64u
+#define GENERAL_PURPOSE_STR_LENGTH 32u
+
+Private char priv_response_str[MAX_RESPONSE_LENGTH + 1];
+Private char priv_gp_str[GENERAL_PURPOSE_STR_LENGTH + 1u];
+
 
 /********************************** Public function definitions  **************************************/
 
@@ -83,6 +90,9 @@ Private Boolean handleCommand(char * cmd, U16 msg_len)
     Boolean res = FALSE;
     U8 ix;
 
+    /* Set response string to 0 */
+    priv_response_str[0] = 0;
+
     for (ix = 0u; ix < NUMBER_OF_ITEMS(priv_command_handlers); ix++)
     {
         if (cmd[0] == priv_command_handlers[ix].prefix)
@@ -90,6 +100,12 @@ Private Boolean handleCommand(char * cmd, U16 msg_len)
            res = priv_command_handlers[ix].handler_fptr(cmd + 1, msg_len - 1u);
            break;
         }
+    }
+
+    if (strlen(priv_response_str) > 0)
+    {
+        addchar(priv_response_str, '\n');
+        uartmgr_send_str(priv_response_str);
     }
 
     return res;
@@ -146,7 +162,17 @@ Private Boolean HandleCommandToStepper(char * data, U8 len)
 
 Private Boolean HandleQueryState(char * data, U8 len)
 {
-    /* TODO : Create handler for reporting current state of stepper motors */
+    U8 id;
+    U16 speed;
+
+    for (id = 0u; id < NUMBER_OF_STEPPERS; id++)
+    {
+        speed = stepper_getSpeed((Stepper_Id)id);
+
+        sprintf(priv_gp_str, "S%d:%dRPM ", id, speed); /* TODO : Might not want to use sprintf here, as it takes a lot of processing power. */
+        strcat(priv_response_str, priv_gp_str);
+    }
+
     return TRUE;
 }
 

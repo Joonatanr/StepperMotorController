@@ -161,6 +161,19 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
 }
 
 
+Public U16 stepper_getSpeed(Stepper_Id id)
+{
+    if (id < NUMBER_OF_STEPPERS)
+    {
+        return priv_stepper_state[id].target_speed;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
 /* TODO : This is temporary, in the future should set speed in other units. */
 Public void stepper_setTimerValue(U32 value, Stepper_Id id)
 {
@@ -174,6 +187,7 @@ Private void stopStepper(Stepper_Id id)
 {
     /* TODO : Should also drive enable, sleep pins etc. */
     frequency_setEnable(FALSE, priv_stepper_conf[id].frq_ch);
+    priv_stepper_state[id].target_speed = 0u;
 }
 
 
