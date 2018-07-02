@@ -18,7 +18,7 @@
 /***************************Private variable declarations *************************************/
 
 
-#define DEFAULT_MICROSTEPPING_MODE 8u
+#define DEFAULT_MICROSTEPPING_MODE 32u
 #define NUMBER_OF_FULL_STEPS_PER_ROUND 200u
 #define STEPPER_TIMER_FREQUENCY 3000000u /* 3 MHz */
 
@@ -50,15 +50,37 @@ typedef struct
 
 Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
 {
-     { /* Stepper 1 */
+     { /* Stepper 0 */
        .reset_pin = {GPIO_PORT_P5, GPIO_PIN6},
        .sleep_pin = {GPIO_PORT_P2, GPIO_PIN6},
        .frq_ch = FRQ_CH1,
        .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
        .max_speed = 1000u
-     }
- /* TODO : Add all other stepper motors. */
+     },
 
+     { /* Stepper 1 */
+       .reset_pin = {0, 0}, /* These are not connected yet. */
+       .sleep_pin = {0, 0},
+       .frq_ch = FRQ_CH2,
+       .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
+       .max_speed = 1000u
+     },
+
+     { /* Stepper 2 */
+       .reset_pin = {0, 0},
+       .sleep_pin = {0, 0},
+       .frq_ch = FRQ_CH3,
+       .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
+       .max_speed = 1000u
+     },
+
+     { /* Stepper 3 */
+       .reset_pin = {0, 0},
+       .sleep_pin = {0, 0},
+       .frq_ch = FRQ_CH4,
+       .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
+       .max_speed = 1000u
+     }
 };
 
 Private StepperState_T priv_stepper_state[NUMBER_OF_STEPPERS];
@@ -74,6 +96,12 @@ Public void stepper_init(void)
     /* 1. Initialize HW pins */
     for (stepper = 0u; stepper < NUMBER_OF_STEPPERS; stepper++)
     {
+        if(priv_stepper_conf[stepper].reset_pin.port == 0)
+        {
+            /* Ports not yet connected for this stepper. */
+            continue;
+        }
+
         GPIO_setAsOutputPin(priv_stepper_conf[stepper].reset_pin.port, priv_stepper_conf[stepper].reset_pin.pin);
         GPIO_setAsOutputPin(priv_stepper_conf[stepper].sleep_pin.port, priv_stepper_conf[stepper].sleep_pin.pin);
 

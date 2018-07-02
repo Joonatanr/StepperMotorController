@@ -12,7 +12,10 @@
 
 typedef enum
 {
+    STEPPER0,
     STEPPER1,
+    STEPPER2,
+    STEPPER3,
     NUMBER_OF_STEPPERS
 } Stepper_Id;
 

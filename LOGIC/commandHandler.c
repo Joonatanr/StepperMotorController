@@ -15,6 +15,7 @@
 /********************************************* Private definitions ************************************/
 
 typedef Boolean (*CommandHandlerFunc)(char * data, U8 len);
+typedef Boolean (*SubFunctionHandler)(Stepper_Id id, int arg);
 
 typedef struct
 {
@@ -23,11 +24,26 @@ typedef struct
 } CommandHandler_T;
 
 
+typedef struct
+{
+    char prefix;
+    SubFunctionHandler handler_fptr;
+} SubFunc_T;
+
+
 /************************************* Private function prototypes ************************************/
 
-Private Boolean HandleCommandTimerSet(char * data, U8 len);
-Private Boolean HandleCommandRPMSet(char * data, U8 len);
 Private Boolean handleCommand(char * cmd, U16 msg_len);
+
+/* Command handlers */
+Private Boolean HandleCommandToStepper(char * data, U8 len);
+Private Boolean HandleQueryState(char * data, U8 len);
+
+/* Subfunction handlers */
+Private Boolean HandleCommandTimerSet(Stepper_Id id, int arg);
+Private Boolean HandleCommandRPMSet(Stepper_Id id, int arg);
+
+
 
 
 /************************************ Private variable definitions ***********************************/
@@ -37,8 +53,15 @@ Public UartCommandHandler CmdHandlerFunc = handleCommand;
 
 Private const CommandHandler_T priv_command_handlers[] =
 {
-     { .prefix = 'T', .handler_fptr = HandleCommandTimerSet },
-     { .prefix = 'R', .handler_fptr = HandleCommandRPMSet   }
+     { .prefix = 'S', .handler_fptr = HandleCommandToStepper    },
+     { .prefix = 'Q', .handler_fptr = HandleQueryState          }
+};
+
+
+Private const SubFunc_T priv_subfunctions[] =
+{
+     { .prefix = 'T', .handler_fptr = HandleCommandTimerSet     },
+     { .prefix = 'R', .handler_fptr = HandleCommandRPMSet       },
 };
 
 
@@ -74,19 +97,46 @@ Private Boolean handleCommand(char * cmd, U16 msg_len)
 
 
 /********************************* Command handlers ********************************/
-Private Boolean HandleCommandTimerSet(char * data, U8 len)
+
+/* Format is S1R200 */
+Private Boolean HandleCommandToStepper(char * data, U8 len)
 {
     Boolean res = FALSE;
-    long parsedValue;
+    int stepper_id;
+    char subcmd;
+    char * ps = data;
+    U8 ix;
 
     if (len > 0u)
     {
-        parsedValue = atol(data);
-
-        if (parsedValue > 0)
+        stepper_id = atoi(ps);
+        if ((stepper_id >= 0) && (stepper_id < NUMBER_OF_STEPPERS))
         {
-            stepper_setTimerValue(parsedValue, STEPPER1);
-            res = TRUE;
+            ps++;
+
+            if(!(*ps))
+            {
+                return FALSE;
+            }
+
+            /* Extract sub command */
+            subcmd = *ps;
+            ps++;
+
+            if(!(*ps))
+            {
+                return FALSE;
+            }
+
+            for (ix = 0u; ix < NUMBER_OF_ITEMS(priv_subfunctions); ix++)
+            {
+                if (priv_subfunctions[ix].prefix == subcmd)
+                {
+                    int arg = atoi(ps);
+                    priv_subfunctions[ix].handler_fptr((Stepper_Id)stepper_id, arg);
+                    break;
+                }
+            }
         }
     }
 
@@ -94,21 +144,40 @@ Private Boolean HandleCommandTimerSet(char * data, U8 len)
 }
 
 
-Private Boolean HandleCommandRPMSet(char * data, U8 len)
+Private Boolean HandleQueryState(char * data, U8 len)
+{
+    /* TODO : Create handler for reporting current state of stepper motors */
+    return TRUE;
+}
+
+
+/********************************* Subfunction handlers ********************************/
+Private Boolean HandleCommandTimerSet(Stepper_Id id, int arg)
 {
     Boolean res = FALSE;
-    int parsedValue;
 
-    if (len > 0u)
+    if ((id < NUMBER_OF_STEPPERS) && (arg >= 0))
     {
-        parsedValue = atoi(data);
-        if (parsedValue >= 0)
-        {
-            res = stepper_setSpeed((U32)parsedValue, STEPPER1);
-        }
+        stepper_setTimerValue(arg, id);
+        res = TRUE;
     }
-
     return res;
 }
+
+
+Private Boolean HandleCommandRPMSet(Stepper_Id id, int arg)
+{
+    Boolean res = FALSE;
+
+    if ((id < NUMBER_OF_STEPPERS) && (arg >= 0))
+    {
+        stepper_setSpeed(arg, id);
+        res = TRUE;
+    }
+    return res;
+}
+
+
+
 
 
