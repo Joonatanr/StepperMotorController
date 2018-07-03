@@ -106,9 +106,9 @@ Public void stepper_init(void)
         GPIO_setAsOutputPin(priv_stepper_conf[stepper].reset_pin.port, priv_stepper_conf[stepper].reset_pin.pin);
         GPIO_setAsOutputPin(priv_stepper_conf[stepper].sleep_pin.port, priv_stepper_conf[stepper].sleep_pin.pin);
 
-        /* Set sleep and reset pins high initally */
+        /* Set sleep and reset pins to inital values */
         GPIO_setOutputHighOnPin(priv_stepper_conf[stepper].reset_pin.port, priv_stepper_conf[stepper].reset_pin.pin);
-        GPIO_setOutputHighOnPin(priv_stepper_conf[stepper].sleep_pin.port, priv_stepper_conf[stepper].sleep_pin.pin);
+        GPIO_setOutputLowOnPin(priv_stepper_conf[stepper].sleep_pin.port, priv_stepper_conf[stepper].sleep_pin.pin);
     }
 
     /* 2. Initialize stepper states */
@@ -177,6 +177,11 @@ Public U16 stepper_getSpeed(Stepper_Id id)
 /* TODO : This is temporary, in the future should set speed in other units. */
 Public void stepper_setTimerValue(U32 value, Stepper_Id id)
 {
+    if (priv_stepper_conf[id].sleep_pin.port != 0)
+    {
+        GPIO_setOutputHighOnPin(priv_stepper_conf[id].sleep_pin.port, priv_stepper_conf[id].sleep_pin.pin);
+    }
+
     frequency_setInterval(value, priv_stepper_conf[id].frq_ch);
 }
 
@@ -186,6 +191,12 @@ Public void stepper_setTimerValue(U32 value, Stepper_Id id)
 Private void stopStepper(Stepper_Id id)
 {
     /* TODO : Should also drive enable, sleep pins etc. */
+    if (priv_stepper_conf[id].sleep_pin.port != 0)
+    {
+        GPIO_setOutputLowOnPin(priv_stepper_conf[id].sleep_pin.port, priv_stepper_conf[id].sleep_pin.pin);
+    }
+
+
     frequency_setEnable(FALSE, priv_stepper_conf[id].frq_ch);
     priv_stepper_state[id].target_speed = 0u;
 }
