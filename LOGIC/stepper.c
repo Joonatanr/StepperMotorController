@@ -52,24 +52,24 @@ typedef struct
 Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
 {
      { /* Stepper 0 */
-       .reset_pin = {GPIO_PORT_P5, GPIO_PIN6},
-       .sleep_pin = {GPIO_PORT_P2, GPIO_PIN6},
+       .reset_pin = { GPIO_PORT_P5, GPIO_PIN6 },
+       .sleep_pin = { GPIO_PORT_P2, GPIO_PIN6 },
        .frq_ch = FRQ_CH1,
        .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
        .max_speed = 1000u
      },
 
      { /* Stepper 1 */
-       .reset_pin = {0, 0}, /* These are not connected yet. */
-       .sleep_pin = {0, 0},
+       .reset_pin = { GPIO_PORT_P6, GPIO_PIN6 },
+       .sleep_pin = { GPIO_PORT_P6, GPIO_PIN7 },
        .frq_ch = FRQ_CH2,
        .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
        .max_speed = 1000u
      },
 
      { /* Stepper 2 */
-       .reset_pin = {0, 0},
-       .sleep_pin = {0, 0},
+       .reset_pin = { GPIO_PORT_P2, GPIO_PIN3 },
+       .sleep_pin = { GPIO_PORT_P5, GPIO_PIN1 },
        .frq_ch = FRQ_CH3,
        .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
        .max_speed = 1000u
