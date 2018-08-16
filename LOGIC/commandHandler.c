@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include "misc.h"
 
+#define ECHO_ENABLED
+
 
 /********************************************* Private definitions ************************************/
 
@@ -103,6 +105,13 @@ Private Boolean handleCommand(char * cmd, U16 msg_len)
            break;
         }
     }
+
+#ifdef ECHO_ENABLED
+    uartmgr_send_char(':');
+    uartmgr_send_str(cmd);
+    uartmgr_send_char('\n');
+#endif
+
 
     if (strlen(priv_response_str) > 0)
     {
