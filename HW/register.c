@@ -145,13 +145,26 @@ Private void ports_init(void)
     GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2);
 
     //Set test motor pin as output.
-    GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN2);
+    //GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN2);
 }
 
 
 /****************************************************************************************
  * INPUT OUTPUT PORTS
  ****************************************************************************************/
+
+Public void ports_setPort(U32 port, U32 pin, Boolean value)
+{
+    if (value)
+    {
+        GPIO_setOutputHighOnPin(port, pin);
+    }
+    else
+    {
+        GPIO_setOutputLowOnPin(port, pin);
+    }
+}
+
 
 Public void set_led_one(U8 state)
 {

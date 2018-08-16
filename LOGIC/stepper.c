@@ -14,7 +14,7 @@
 /************************** Private function forward declarations *****************************/
 
 Private void stopStepper(Stepper_Id id);
-
+Private Boolean setStepperMicrostep(Stepper_Id id, U8 mode);
 
 /***************************Private variable declarations *************************************/
 
@@ -34,8 +34,11 @@ typedef struct
     Stepper_IOPort_t    reset_pin;
     Stepper_IOPort_t    sleep_pin;
 
+    Stepper_IOPort_t    m0_pin;
+    Stepper_IOPort_t    m1_pin;
+    Stepper_IOPort_t    m2_pin;
+
     frequency_Channel_t frq_ch;
-    const U8            microstepping_mode; //  For now this cannot be changed during runtime.
     const U16           max_speed;          //  In RPM
 } StepperConf_t;
 
@@ -44,6 +47,7 @@ typedef struct
 {
     const StepperConf_t *   conf;
 
+    U8                      microstepping_mode;
     U16                     microsteps_per_round;
     U16                     target_speed;
 } StepperState_T;
@@ -54,32 +58,48 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
      { /* Stepper 0 */
        .reset_pin = { GPIO_PORT_P5, GPIO_PIN6 },
        .sleep_pin = { GPIO_PORT_P2, GPIO_PIN6 },
+
+       .m0_pin =    { GPIO_PORT_P3, GPIO_PIN0 },
+       .m1_pin =    { GPIO_PORT_P2, GPIO_PIN5 },
+       .m2_pin =    { GPIO_PORT_P1, GPIO_PIN6 },
+
        .frq_ch = FRQ_CH1,
-       .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
        .max_speed = 1000u
      },
 
      { /* Stepper 1 */
        .reset_pin = { GPIO_PORT_P6, GPIO_PIN6 },
        .sleep_pin = { GPIO_PORT_P6, GPIO_PIN7 },
+
+       .m0_pin =    { 0u, 0u },
+       .m1_pin =    { 0u, 0u },
+       .m2_pin =    { 0u, 0u },
+
        .frq_ch = FRQ_CH2,
-       .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
        .max_speed = 1000u
      },
 
      { /* Stepper 2 */
        .reset_pin = { GPIO_PORT_P2, GPIO_PIN3 },
        .sleep_pin = { GPIO_PORT_P5, GPIO_PIN1 },
+
+       .m0_pin =    { 0u, 0u },
+       .m1_pin =    { 0u, 0u },
+       .m2_pin =    { 0u, 0u },
+
        .frq_ch = FRQ_CH3,
-       .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
        .max_speed = 1000u
      },
 
      { /* Stepper 3 */
        .reset_pin = {0, 0},
        .sleep_pin = {0, 0},
+
+       .m0_pin =    { 0u, 0u },
+       .m1_pin =    { 0u, 0u },
+       .m2_pin =    { 0u, 0u },
+
        .frq_ch = FRQ_CH4,
-       .microstepping_mode = DEFAULT_MICROSTEPPING_MODE,
        .max_speed = 1000u
      }
 };
@@ -93,29 +113,49 @@ Private StepperState_T priv_stepper_state[NUMBER_OF_STEPPERS];
 Public void stepper_init(void)
 {
     U8 stepper;
+    const StepperConf_t * conf_ptr;
 
     /* 1. Initialize HW pins */
     for (stepper = 0u; stepper < NUMBER_OF_STEPPERS; stepper++)
     {
-        if(priv_stepper_conf[stepper].reset_pin.port == 0)
+        conf_ptr = &priv_stepper_conf[stepper];
+
+        if(conf_ptr->reset_pin.port == 0)
         {
             /* Ports not yet connected for this stepper. */
             continue;
         }
 
-        GPIO_setAsOutputPin(priv_stepper_conf[stepper].reset_pin.port, priv_stepper_conf[stepper].reset_pin.pin);
-        GPIO_setAsOutputPin(priv_stepper_conf[stepper].sleep_pin.port, priv_stepper_conf[stepper].sleep_pin.pin);
+        GPIO_setAsOutputPin(conf_ptr->reset_pin.port, conf_ptr->reset_pin.pin);
+        GPIO_setAsOutputPin(conf_ptr->sleep_pin.port, conf_ptr->sleep_pin.pin);
 
         /* Set sleep and reset pins to inital values */
-        GPIO_setOutputHighOnPin(priv_stepper_conf[stepper].reset_pin.port, priv_stepper_conf[stepper].reset_pin.pin);
-        GPIO_setOutputLowOnPin(priv_stepper_conf[stepper].sleep_pin.port, priv_stepper_conf[stepper].sleep_pin.pin);
+        GPIO_setOutputHighOnPin(conf_ptr->reset_pin.port, conf_ptr->reset_pin.pin);
+        GPIO_setOutputLowOnPin(conf_ptr->sleep_pin.port, conf_ptr->sleep_pin.pin);
+
+        //Initialize microstepping control pins.
+        if(conf_ptr->m0_pin.port != 0u)
+        {
+            GPIO_setAsOutputPin(conf_ptr->m0_pin.port, conf_ptr->m0_pin.pin);
+            GPIO_setAsOutputPin(conf_ptr->m1_pin.port, conf_ptr->m1_pin.pin);
+            GPIO_setAsOutputPin(conf_ptr->m2_pin.port, conf_ptr->m2_pin.pin);
+        }
+
     }
 
     /* 2. Initialize stepper states */
     for (stepper = 0u; stepper < NUMBER_OF_STEPPERS; stepper++)
     {
+        /* TODO : Should be possible to define default microstepping mode for all steppers separately. */
         priv_stepper_state[stepper].conf = &priv_stepper_conf[stepper];
-        priv_stepper_state[stepper].microsteps_per_round = priv_stepper_conf[stepper].microstepping_mode * NUMBER_OF_FULL_STEPS_PER_ROUND;
+
+        if(!setStepperMicrostep((Stepper_Id)stepper, (U8)DEFAULT_MICROSTEPPING_MODE))
+        {
+            /* Ports are driven manually - assume default microstepping mode for calculations. */
+            priv_stepper_state[stepper].microstepping_mode = DEFAULT_MICROSTEPPING_MODE;
+            priv_stepper_state[stepper].microsteps_per_round = priv_stepper_state[stepper].microstepping_mode * NUMBER_OF_FULL_STEPS_PER_ROUND;
+        }
+
         priv_stepper_state[stepper].target_speed = 0u;
     }
 }
@@ -139,6 +179,7 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
     if (rpm == 0)
     {
         stopStepper(id);
+        res = TRUE;
     }
     else if (rpm <= conf_ptr->max_speed)
     {
@@ -186,6 +227,20 @@ Public void stepper_setTimerValue(U32 value, Stepper_Id id)
 }
 
 
+Public Boolean stepper_setMicrosteppingMode(Stepper_Id id, U8 mode)
+{
+    Boolean res = FALSE;
+
+    if (setStepperMicrostep(id, mode))
+    {
+        //Update the speed calculation.
+        res = stepper_setSpeed(priv_stepper_state[id].target_speed, id);
+    }
+
+    return res;
+}
+
+
 /********************* Private function definitions ******************************************/
 
 Private void stopStepper(Stepper_Id id)
@@ -200,6 +255,77 @@ Private void stopStepper(Stepper_Id id)
     frequency_setEnable(FALSE, priv_stepper_conf[id].frq_ch);
     priv_stepper_state[id].target_speed = 0u;
 }
+
+
+Private Boolean setStepperMicrostep(Stepper_Id id, U8 mode)
+{
+    Boolean res = FALSE;
+
+    if (id < NUMBER_OF_STEPPERS)
+    {
+        //Check if we have microstepping control enabled for this stepper motor.
+        if (priv_stepper_conf[id].m0_pin.port != 0)
+        {
+            Boolean m0_mode = FALSE;
+            Boolean m1_mode = FALSE;
+            Boolean m2_mode = FALSE;
+
+            switch(mode)
+            {
+            case 1u:
+                /* Full step */
+                m0_mode = FALSE;
+                m1_mode = FALSE;
+                m2_mode = FALSE;
+                break;
+            case 2u:
+                /* Half step */
+                m0_mode = TRUE;
+                m1_mode = FALSE;
+                m2_mode = FALSE;
+                break;
+            case 4u:
+                /* 1/4 step */
+                m0_mode = FALSE;
+                m1_mode = TRUE;
+                m2_mode = FALSE;
+                break;
+            case 8u:
+                /* 1/8 step */
+                m0_mode = TRUE;
+                m1_mode = TRUE;
+                m2_mode = FALSE;
+                break;
+            case 16u:
+                m0_mode = FALSE;
+                m1_mode = FALSE;
+                m2_mode = TRUE;
+                break;
+            case 32u:
+                m0_mode = TRUE;
+                m1_mode = FALSE;
+                m2_mode = TRUE;
+                break;
+            default:
+                //Unsupported number of microsteps.
+                return FALSE;
+            }
+
+            /* Drive the actual physical ports to the desired configuration. */
+            ports_setPort(priv_stepper_conf[id].m0_pin.port, priv_stepper_conf[id].m0_pin.pin, m0_mode);
+            ports_setPort(priv_stepper_conf[id].m1_pin.port, priv_stepper_conf[id].m1_pin.pin, m1_mode);
+            ports_setPort(priv_stepper_conf[id].m2_pin.port, priv_stepper_conf[id].m2_pin.pin, m2_mode);
+
+            priv_stepper_state[id].microstepping_mode = mode;
+            priv_stepper_state[id].microsteps_per_round = priv_stepper_state[id].microstepping_mode * NUMBER_OF_FULL_STEPS_PER_ROUND;
+
+            res = TRUE;
+        }
+    }
+
+    return res;
+}
+
 
 
 

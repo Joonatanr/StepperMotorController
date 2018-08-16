@@ -23,6 +23,6 @@ extern void stepper_init(void);
 extern Boolean stepper_setSpeed(U32 rpm, Stepper_Id id);
 extern void stepper_setTimerValue(U32 value, Stepper_Id id);
 extern U16 stepper_getSpeed(Stepper_Id id);
-
+extern Boolean stepper_setMicrosteppingMode(Stepper_Id id, U8 mode);
 
 #endif /* HW_STEPPER_H_ */

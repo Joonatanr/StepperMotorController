@@ -43,6 +43,7 @@ Private Boolean HandleQueryState(char * data, U8 len);
 /* Subfunction handlers */
 Private Boolean HandleCommandTimerSet(Stepper_Id id, int arg);
 Private Boolean HandleCommandRPMSet(Stepper_Id id, int arg);
+Private Boolean HandleCommandMicroStepSet(Stepper_Id id, int arg);
 
 
 
@@ -63,6 +64,7 @@ Private const SubFunc_T priv_subfunctions[] =
 {
      { .prefix = 'T', .handler_fptr = HandleCommandTimerSet     },
      { .prefix = 'R', .handler_fptr = HandleCommandRPMSet       },
+     { .prefix = 'M', .handler_fptr = HandleCommandMicroStepSet },
 };
 
 
@@ -203,6 +205,17 @@ Private Boolean HandleCommandRPMSet(Stepper_Id id, int arg)
     return res;
 }
 
+
+Private Boolean HandleCommandMicroStepSet(Stepper_Id id, int arg)
+{
+    Boolean res = FALSE;
+
+    if ((id < NUMBER_OF_STEPPERS) && (arg >= 0))
+    {
+        res = stepper_setMicrosteppingMode(id, (U8)arg);
+    }
+    return res;
+}
 
 
 

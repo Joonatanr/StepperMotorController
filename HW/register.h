@@ -26,6 +26,6 @@ extern void set_led_two_green(U8 state);
 extern void set_led_two_blue(U8 state);
 
 extern void set_test_motor_port(U8 state);
-
+extern void ports_setPort(U32 port, U32 pin, Boolean value);
 
 #endif /* HW_REGISTER_H_ */
