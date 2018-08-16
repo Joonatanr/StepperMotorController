@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepperMotorGUI", "StepperMotorGUI\StepperMotorGUI.csproj", "{141E9E3B-8F5D-4EE4-891D-75909273DFDC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{141E9E3B-8F5D-4EE4-891D-75909273DFDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{141E9E3B-8F5D-4EE4-891D-75909273DFDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{141E9E3B-8F5D-4EE4-891D-75909273DFDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{141E9E3B-8F5D-4EE4-891D-75909273DFDC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8D293300-154F-45F4-9577-C3A849ACAF65}
+	EndGlobalSection
+EndGlobal
