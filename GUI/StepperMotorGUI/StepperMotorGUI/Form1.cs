@@ -14,6 +14,7 @@ namespace StepperMotorGUI
     public partial class StepperMotorControlForm : Form
     {
         private SerialPort mySerialPort;
+        private const bool debugEnabled = true;
 
         public StepperMotorControlForm()
         {
@@ -22,6 +23,9 @@ namespace StepperMotorGUI
             populateComPorts();
 
             motorControl1.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
+            motorControl2.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
+            motorControl3.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
+            motorControl4.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
         }
 
         private void populateComPorts()
@@ -62,6 +66,11 @@ namespace StepperMotorGUI
 
         private void sendComPortCommand(string cmd)
         {
+            if (debugEnabled)
+            {
+                printLine("Command : <" + cmd + ">");
+            }
+
             if (mySerialPort == null)
             {
                 printLine("COM port not opened");
@@ -93,21 +102,27 @@ namespace StepperMotorGUI
         {
             SerialPort sp = (SerialPort)sender;
             string indata = sp.ReadExisting();
-            printLine("Data Received:");
-            printLine("<" + indata + ">");
+            printLog("Data Received:");
+            printLog("<" + indata + ">");
+        }
+
+
+        private void printLog(string data)
+        {
+            if (richTextBox1.InvokeRequired)
+            {
+                this.Invoke(new Action<string>(printLog), new object[] { data });
+            }
+            else
+            {
+                richTextBox1.AppendText(data);
+            }
         }
 
 
         private void printLine(string line)
         {
-            if (richTextBox1.InvokeRequired)
-            {
-                this.Invoke(new Action<string>(printLine), new object[] { line });
-            }
-            else
-            {
-                richTextBox1.AppendText(line + Environment.NewLine);
-            }
+            printLog(line + Environment.NewLine);
         }
 
         private void buttonClose_Click(object sender, EventArgs e)
