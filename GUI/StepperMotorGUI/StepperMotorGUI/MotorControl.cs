@@ -12,11 +12,17 @@ namespace StepperMotorGUI
 {
     public partial class MotorControl : UserControl
     {
+        /* private members */
+
         private string m_motorName = " ";
         private bool m_valueChangedByCode = false;
 
+        /* public members */
+
         public delegate void SendMotorCommandHandler(string cmd);
         public SendMotorCommandHandler SendMotorCommand = null;
+
+        /* Properties */
 
         public string MotorName
         {
@@ -38,7 +44,6 @@ namespace StepperMotorGUI
             /* Initialize radio buttons */
             foreach(RadioButton btn in groupBox1.Controls.OfType<RadioButton>())
             {
-                //We have to test this...
                 btn.CheckedChanged += new EventHandler(radioButtons_CheckedChanged);
             }
         }
@@ -135,7 +140,6 @@ namespace StepperMotorGUI
             string cmd = "M" + microstep;
             sendCommand(cmd);
         }
-
 
 
         /* TODO : Remove this.*/

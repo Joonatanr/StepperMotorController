@@ -24,32 +24,19 @@ namespace StepperMotorGUI
 
             populateComPorts();
 
-            //motorControl1.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
-            //motorControl2.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
-            //motorControl3.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
-            //motorControl4.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
-
             foreach(MotorControl m in groupBoxStepperMotors.Controls.OfType<MotorControl>())
             {
                 /* We create a list so that we don't have to access each control separately all the time. */
                 StepperMotors.Add(m);
             }
 
+            /* Connect the command handlers for each motor control to the main COM port. */
             foreach(MotorControl m in StepperMotors)
             {
                 m.SendMotorCommand = new MotorControl.SendMotorCommandHandler(sendComPortCommand);
             }
 
-
-            /* Just for testing. */
-            /*
-            string testString = "S0:100RPM S1:0RPM S2:240RPM S3:0RPM";
-            foreach (MotorControl m in StepperMotors)
-            {
-                m.HandleStatusString(testString);
-            }
-            */
-            
+            updateStatus("Disconnected");
         }
 
         private void populateComPorts()
@@ -82,7 +69,8 @@ namespace StepperMotorGUI
 
                 mySerialPort.Open();
                 updateMotorStatus();
-                //mySerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
+                updateStatus("Connected");
+                mySerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
             }
             catch (Exception ex)
             {
@@ -117,7 +105,6 @@ namespace StepperMotorGUI
             {
                 printLine("Failed to get motor state : " + ex.Message);
             }
-
         }
 
 
@@ -143,14 +130,13 @@ namespace StepperMotorGUI
             try
             {
                 mySerialPort.WriteLine(cmd);
+                printLine("Tx: " + cmd);
             }
             catch (Exception ex)
             {
                 printLine("Failed to send command " + cmd + " Got exception : " + ex.Message);
                 return;
             }
-
-            printLine("Sent command : " + cmd);
         }
 
         private void DataReceivedHandler(
@@ -159,8 +145,8 @@ namespace StepperMotorGUI
         {
             SerialPort sp = (SerialPort)sender;
             string indata = sp.ReadExisting();
-            printLog("Data Received:");
-            printLog("<" + indata + ">");
+            printLog("Rx:");
+            printLog(indata);
         }
 
 
@@ -187,8 +173,15 @@ namespace StepperMotorGUI
             if (mySerialPort != null)
             {
                 mySerialPort.Close();
+                updateStatus("Disconnected");
             }
         }
+
+        private void updateStatus(string stat)
+        {
+            toolStripStatusLabel1.Text = "Status : " + stat;
+        }
+
 
         /* TODO : Remove this. */
         private void StepperMotorControlForm_Load(object sender, EventArgs e)
