@@ -60,16 +60,25 @@ Public void frequency_init(void)
 }
 
 
-Public void frequency_setInterval(U16 interval, frequency_Channel_t ch)
+Public Boolean frequency_setInterval(U32 interval, frequency_Channel_t ch)
 {
     /* Since this is a frequency generator then the duty cycle will always be 50% s*/
     Timer_A_PWMConfig * conf_ptr;
+    U32 duty_cycle;
+    Boolean res = FALSE;
 
     conf_ptr = &priv_freq_pwm_cfg[ch];
     conf_ptr->timerPeriod = interval;
-    conf_ptr->dutyCycle = interval >> 1u;
+    duty_cycle = interval / 2;
 
-    MAP_Timer_A_generatePWM(priv_freq_conf[ch].timer, conf_ptr);
+    if (duty_cycle < 0xffffu)
+    {
+        conf_ptr->dutyCycle = (U16)duty_cycle;
+        MAP_Timer_A_generatePWM(priv_freq_conf[ch].timer, conf_ptr);
+        res = TRUE;
+    }
+
+    return res;
 }
 
 

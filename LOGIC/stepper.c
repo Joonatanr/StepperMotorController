@@ -184,13 +184,7 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
         value = STEPPER_TIMER_FREQUENCY * 60u;
         value = value / microsteps_per_minute;
 
-        /* TODO : Should set a minimum value for this, otherwise the timer will freeze the system with too low values... */
-        if (value > 20u) /* Current value is quite arbitrarily chosen. */
-        {
-            stepper_setTimerValue(value, id);
-        }
-
-        res = TRUE;
+        res = stepper_setTimerValue(value, id);
     }
 
     return res;
@@ -210,15 +204,14 @@ Public U16 stepper_getSpeed(Stepper_Id id)
 }
 
 
-/* TODO : This is temporary, in the future should set speed in other units. */
-Public void stepper_setTimerValue(U32 value, Stepper_Id id)
+Public Boolean stepper_setTimerValue(U32 value, Stepper_Id id)
 {
     if (priv_stepper_conf[id].sleep_pin.port != 0)
     {
         GPIO_setOutputHighOnPin(priv_stepper_conf[id].sleep_pin.port, priv_stepper_conf[id].sleep_pin.pin);
     }
 
-    frequency_setInterval(value, priv_stepper_conf[id].frq_ch);
+    return frequency_setInterval(value, priv_stepper_conf[id].frq_ch);
 }
 
 
