@@ -32,9 +32,9 @@ void main(void)
 
     stepper_init();
 
-    set_led_two_blue(0u);
-    set_led_two_green(0u);
-    set_led_two_red(0u);
+    set_led_two_blue(FALSE);
+    set_led_two_green(FALSE);
+    set_led_two_red(FALSE);
 
 	while(1)
 	{
@@ -66,5 +66,5 @@ Private void timer_1sec(void)
     static U8 led_state;
 
     led_state = !led_state;
-    set_led_one(led_state);
+    set_led_one((Boolean)led_state);
 }

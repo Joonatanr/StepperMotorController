@@ -10,6 +10,7 @@
 #include "driverlib.h"
 #include "register.h"
 #include "frequency.h"
+#include "ports.h"
 
 /************************** Private function forward declarations *****************************/
 
@@ -25,18 +26,12 @@ Private Boolean setStepperMicrostep(Stepper_Id id, U8 mode);
 
 typedef struct
 {
-    U32 port;
-    U32 pin;
-} Stepper_IOPort_t;
+    IOPort_t    reset_pin;
+    IOPort_t    sleep_pin;
 
-typedef struct
-{
-    Stepper_IOPort_t    reset_pin;
-    Stepper_IOPort_t    sleep_pin;
-
-    Stepper_IOPort_t    m0_pin;
-    Stepper_IOPort_t    m1_pin;
-    Stepper_IOPort_t    m2_pin;
+    IOPort_t    m0_pin;
+    IOPort_t    m1_pin;
+    IOPort_t    m2_pin;
 
     frequency_Channel_t frq_ch;
     const U16           max_speed;          //  In RPM

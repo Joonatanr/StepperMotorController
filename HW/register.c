@@ -9,11 +9,11 @@
 #include "register.h"
 #include "uartmgr.h"
 #include <driverlib.h>
+#include "ports.h"
 
 /***************************** Private function forward declarations ********************/
 
 Private void timer_init(void);
-Private void ports_init(void);
 Private void clocks_init(void);
 
 Private void mainTimerInterrupt(void);
@@ -59,9 +59,6 @@ Public void delay_msec(U16 msec)
 }
 
 /***************************** Private function definitions ******************************/
-
-//#define CLOCK_FREQ 12u
-#define CLOCK_FREQ 24u
 
 Private void clocks_init(void)
 {
@@ -138,91 +135,28 @@ Private void mainTimerInterrupt(void)
 }
 
 
-Private void ports_init(void)
-{
-    //First lets set up LED ports as outputs.
-    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0);
-    GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2);
-
-    //Set test motor pin as output.
-    //GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN2);
-}
-
-
 /****************************************************************************************
- * INPUT OUTPUT PORTS
+ *
+ * LED controls
+ *
  ****************************************************************************************/
 
-Public void ports_setPort(U32 port, U32 pin, Boolean value)
+Public void set_led_one(Boolean state)
 {
-    if (value)
-    {
-        GPIO_setOutputHighOnPin(port, pin);
-    }
-    else
-    {
-        GPIO_setOutputLowOnPin(port, pin);
-    }
+    ports_setPort(GPIO_PORT_P1, GPIO_PIN0, state);
 }
 
-
-Public void set_led_one(U8 state)
+Public void set_led_two_red(Boolean state)
 {
-    if (state == 1u)
-    {
-        GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);
-    }
-    else
-    {
-        GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);
-    }
+    ports_setPort(GPIO_PORT_P2, GPIO_PIN0, state);
 }
 
-Public void set_led_two_red(U8 state)
+Public void set_led_two_green(Boolean state)
 {
-    if (state == 1u)
-    {
-        GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN0);
-    }
-    else
-    {
-        GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN0);
-    }
+    ports_setPort(GPIO_PORT_P2, GPIO_PIN1, state);
 }
 
-Public void set_led_two_green(U8 state)
+Public void set_led_two_blue(Boolean state)
 {
-    if (state == 1u)
-    {
-        GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN1);
-    }
-    else
-    {
-        GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1);
-    }
-}
-
-Public void set_led_two_blue(U8 state)
-{
-    if (state == 1u)
-    {
-        GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN2);
-    }
-    else
-    {
-        GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN2);
-    }
-}
-
-
-Public void set_test_motor_port(U8 state)
-{
-    if (state == 1u)
-    {
-        GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN2);
-    }
-    else
-    {
-        GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN2);
-    }
+    ports_setPort(GPIO_PORT_P2, GPIO_PIN2, state);
 }
