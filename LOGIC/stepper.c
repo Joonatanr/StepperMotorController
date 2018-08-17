@@ -246,7 +246,6 @@ Private void stopStepper(Stepper_Id id)
         GPIO_setOutputLowOnPin(priv_stepper_conf[id].sleep_pin.port, priv_stepper_conf[id].sleep_pin.pin);
     }
 
-
     frequency_setEnable(FALSE, priv_stepper_conf[id].frq_ch);
     priv_stepper_state[id].target_speed = 0u;
 }
