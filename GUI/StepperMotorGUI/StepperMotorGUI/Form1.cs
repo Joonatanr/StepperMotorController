@@ -14,7 +14,7 @@ namespace StepperMotorGUI
     public partial class StepperMotorControlForm : Form
     {
         private SerialPort mySerialPort;
-        private const bool debugEnabled = true;
+        private const bool debugEnabled = false;
 
         private List<MotorControl> StepperMotors = new List<MotorControl>();
 
@@ -70,7 +70,11 @@ namespace StepperMotorGUI
                 mySerialPort.Open();
                 updateMotorStatus();
                 updateStatus("Connected");
-                mySerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
+
+                if (debugEnabled)
+                {
+                    mySerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
+                }
             }
             catch (Exception ex)
             {
@@ -85,6 +89,8 @@ namespace StepperMotorGUI
             sendComPortCommand("Q");
             try
             {
+                /* TODO : We definitely need a better way of doing this. */
+                
                 /* Echo would break this.... */
                 string res = mySerialPort.ReadLine();
 
@@ -94,6 +100,8 @@ namespace StepperMotorGUI
                     /* Not sure if this will work, needs testing. */
                     res = mySerialPort.ReadLine();
                 }
+
+                printLog("Stepper status : " + res);
 
                 foreach(MotorControl m in StepperMotors)
                 {

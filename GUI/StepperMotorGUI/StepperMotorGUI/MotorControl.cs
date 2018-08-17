@@ -15,7 +15,6 @@ namespace StepperMotorGUI
         /* private members */
 
         private string m_motorName = " ";
-        private bool m_valueChangedByCode = false;
 
         /* public members */
 
@@ -64,7 +63,6 @@ namespace StepperMotorGUI
 
                 if (int.TryParse(numString, out rpm))
                 {
-                    m_valueChangedByCode = true;
                     numericUpDownSpeed.Value = rpm;
                 }
             } 
@@ -78,13 +76,7 @@ namespace StepperMotorGUI
 
 
         private void numericUpDownSpeed_ValueChanged(object sender, EventArgs e)
-        {
-            if (m_valueChangedByCode)
-            {
-                m_valueChangedByCode = false;
-                return;
-            }
-
+        { 
             UInt16 val = (UInt16)numericUpDownSpeed.Value;
             sendCommand("R" + val);
         }
