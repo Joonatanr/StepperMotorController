@@ -39,12 +39,6 @@ void main(void)
 	while(1)
 	{
 	    /* Currently just continuously poll the USART module */
-	    /*
-	    delay_msec(1000);
-	    uartmgr_send_char('X');
-        delay_msec(1000);
-        uartmgr_send_char('O');
-    */
 	    uartmgr_cyclic();
 	}
 
