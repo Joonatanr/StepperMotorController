@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include "misc.h"
 
-#define ECHO_ENABLED
+//#define ECHO_ENABLED
 
 
 /********************************************* Private definitions ************************************/
