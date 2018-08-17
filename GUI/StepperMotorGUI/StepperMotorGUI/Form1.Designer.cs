@@ -38,7 +38,9 @@
             this.motorControl3 = new StepperMotorGUI.MotorControl();
             this.motorControl2 = new StepperMotorGUI.MotorControl();
             this.motorControl1 = new StepperMotorGUI.MotorControl();
+            this.groupBoxStepperMotors = new System.Windows.Forms.GroupBox();
             this.groupBox1.SuspendLayout();
+            this.groupBoxStepperMotors.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -51,7 +53,7 @@
             this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox1.Size = new System.Drawing.Size(477, 81);
+            this.groupBox1.Size = new System.Drawing.Size(522, 81);
             this.groupBox1.TabIndex = 1;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "COM port";
@@ -99,16 +101,16 @@
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(11, 434);
+            this.richTextBox1.Location = new System.Drawing.Point(9, 470);
             this.richTextBox1.Margin = new System.Windows.Forms.Padding(2);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(475, 147);
+            this.richTextBox1.Size = new System.Drawing.Size(522, 147);
             this.richTextBox1.TabIndex = 2;
             this.richTextBox1.Text = "";
             // 
             // motorControl4
             // 
-            this.motorControl4.Location = new System.Drawing.Point(251, 269);
+            this.motorControl4.Location = new System.Drawing.Point(260, 189);
             this.motorControl4.Margin = new System.Windows.Forms.Padding(2);
             this.motorControl4.MotorName = "S3";
             this.motorControl4.Name = "motorControl4";
@@ -117,7 +119,7 @@
             // 
             // motorControl3
             // 
-            this.motorControl3.Location = new System.Drawing.Point(9, 269);
+            this.motorControl3.Location = new System.Drawing.Point(8, 189);
             this.motorControl3.Margin = new System.Windows.Forms.Padding(2);
             this.motorControl3.MotorName = "S2";
             this.motorControl3.Name = "motorControl3";
@@ -126,7 +128,7 @@
             // 
             // motorControl2
             // 
-            this.motorControl2.Location = new System.Drawing.Point(251, 105);
+            this.motorControl2.Location = new System.Drawing.Point(260, 18);
             this.motorControl2.Margin = new System.Windows.Forms.Padding(2);
             this.motorControl2.MotorName = "S1";
             this.motorControl2.Name = "motorControl2";
@@ -135,29 +137,41 @@
             // 
             // motorControl1
             // 
-            this.motorControl1.Location = new System.Drawing.Point(9, 105);
+            this.motorControl1.Location = new System.Drawing.Point(8, 18);
             this.motorControl1.Margin = new System.Windows.Forms.Padding(2);
             this.motorControl1.MotorName = "S0";
             this.motorControl1.Name = "motorControl1";
             this.motorControl1.Size = new System.Drawing.Size(250, 167);
             this.motorControl1.TabIndex = 0;
             // 
+            // groupBoxStepperMotors
+            // 
+            this.groupBoxStepperMotors.Controls.Add(this.motorControl1);
+            this.groupBoxStepperMotors.Controls.Add(this.motorControl4);
+            this.groupBoxStepperMotors.Controls.Add(this.motorControl2);
+            this.groupBoxStepperMotors.Controls.Add(this.motorControl3);
+            this.groupBoxStepperMotors.Location = new System.Drawing.Point(9, 104);
+            this.groupBoxStepperMotors.Name = "groupBoxStepperMotors";
+            this.groupBoxStepperMotors.Size = new System.Drawing.Size(522, 361);
+            this.groupBoxStepperMotors.TabIndex = 6;
+            this.groupBoxStepperMotors.TabStop = false;
+            this.groupBoxStepperMotors.Text = "Stepper Motors";
+            // 
             // StepperMotorControlForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(508, 593);
-            this.Controls.Add(this.motorControl4);
-            this.Controls.Add(this.motorControl3);
-            this.Controls.Add(this.motorControl2);
+            this.ClientSize = new System.Drawing.Size(546, 628);
+            this.Controls.Add(this.groupBoxStepperMotors);
             this.Controls.Add(this.richTextBox1);
             this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.motorControl1);
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "StepperMotorControlForm";
             this.Text = "Motor Controller";
+            this.Load += new System.EventHandler(this.StepperMotorControlForm_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.groupBoxStepperMotors.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -174,6 +188,7 @@
         private MotorControl motorControl2;
         private MotorControl motorControl3;
         private MotorControl motorControl4;
+        private System.Windows.Forms.GroupBox groupBoxStepperMotors;
     }
 }
 

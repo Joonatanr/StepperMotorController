@@ -13,6 +13,7 @@ namespace StepperMotorGUI
     public partial class MotorControl : UserControl
     {
         private string m_motorName = " ";
+        private bool m_valueChangedByCode = false;
 
         public delegate void SendMotorCommandHandler(string cmd);
         public SendMotorCommandHandler SendMotorCommand = null;
@@ -42,6 +43,29 @@ namespace StepperMotorGUI
             }
         }
 
+
+        public void HandleStatusString(string stat)
+        {
+            /* We parse a status query response string. */
+            /* C format -> S%d:%dRPM */
+            int ix = stat.IndexOf(MotorName);
+            if (ix >= 0)
+            {
+                /* Currently we only need to parse the RPM. */
+                /* TODO : Make this into a subfunction. */
+                string sub = stat.Substring(ix + MotorName.Length + 1); //We skip the : character.
+                string numString = new string(sub.TakeWhile(c => Char.IsDigit(c)).ToArray());
+                int rpm;
+
+                if (int.TryParse(numString, out rpm))
+                {
+                    m_valueChangedByCode = true;
+                    numericUpDownSpeed.Value = rpm;
+                }
+            } 
+        }
+
+
         private void sendCommand(string cmd)
         {
             SendMotorCommand?.Invoke(MotorName + cmd);
@@ -50,6 +74,12 @@ namespace StepperMotorGUI
 
         private void numericUpDownSpeed_ValueChanged(object sender, EventArgs e)
         {
+            if (m_valueChangedByCode)
+            {
+                m_valueChangedByCode = false;
+                return;
+            }
+
             UInt16 val = (UInt16)numericUpDownSpeed.Value;
             sendCommand("R" + val);
         }
