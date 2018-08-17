@@ -7,6 +7,8 @@
 
 #include "ports.h"
 
+/* TODO : Fully develop this module -> All IO ports should be defined there. */
+
 
 Public void ports_init(void)
 {
