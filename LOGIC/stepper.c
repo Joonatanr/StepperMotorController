@@ -22,7 +22,7 @@ Private Boolean setStepperMicrostep(Stepper_Id id, U8 mode);
 
 #define DEFAULT_MICROSTEPPING_MODE 32u
 #define NUMBER_OF_FULL_STEPS_PER_ROUND 200u
-#define STEPPER_TIMER_FREQUENCY 3000000u /* 3 MHz */
+
 
 typedef struct
 {
@@ -159,7 +159,6 @@ Public void stepper_init(void)
 Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
 {
     U32 microsteps_per_minute;
-    U32 value;
     Boolean res = FALSE;
 
     StepperState_T * state_ptr = &priv_stepper_state[id];
@@ -179,12 +178,8 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
     else if (rpm <= conf_ptr->max_speed)
     {
         state_ptr->target_speed = rpm;
-
         microsteps_per_minute = rpm * state_ptr->microsteps_per_round;
-        value = STEPPER_TIMER_FREQUENCY * 60u;
-        value = value / microsteps_per_minute;
-
-        res = stepper_setTimerValue(value, id);
+        res = frequency_setFrequency(microsteps_per_minute, (frequency_Channel_t)id);
     }
 
     return res;
@@ -204,6 +199,8 @@ Public U16 stepper_getSpeed(Stepper_Id id)
 }
 
 
+/* Sets timer interval directly. */
+/* This is only for debugging. */
 Public Boolean stepper_setTimerValue(U32 value, Stepper_Id id)
 {
     if (priv_stepper_conf[id].sleep_pin.port != 0)
@@ -226,6 +223,22 @@ Public Boolean stepper_setMicrosteppingMode(Stepper_Id id, U8 mode)
     }
 
     return res;
+}
+
+
+Public Boolean stepper_getState(Stepper_Id id, Stepper_Query_t * res)
+{
+    if ((id < NUMBER_OF_STEPPERS) && (res != NULL))
+    {
+        res->interval = frequency_getInterval((frequency_Channel_t)id);
+        res->rpm = priv_stepper_state[id].target_speed;
+        res->microstepping_mode = priv_stepper_state[id].microstepping_mode;
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
 }
 
 

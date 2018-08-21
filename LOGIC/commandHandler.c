@@ -174,13 +174,12 @@ Private Boolean HandleCommandToStepper(char * data, U8 len)
 Private Boolean HandleQueryState(char * data, U8 len)
 {
     U8 id;
-    U16 speed;
+    Stepper_Query_t query;
 
     for (id = 0u; id < NUMBER_OF_STEPPERS; id++)
     {
-        speed = stepper_getSpeed((Stepper_Id)id);
-
-        sprintf(priv_gp_str, "S%d:%dRPM ", id, speed); /* TODO : Might not want to use sprintf here, as it takes a lot of processing power. */
+        stepper_getState((Stepper_Id)id, &query);
+        sprintf(priv_gp_str, "S%d:%dRPM ", id, query.rpm); /* TODO : Might not want to use sprintf here, as it takes a lot of processing power. */
         strcat(priv_response_str, priv_gp_str);
     }
 
