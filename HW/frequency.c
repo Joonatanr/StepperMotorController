@@ -97,17 +97,25 @@ Public void frequency_setEnable(Boolean mode, frequency_Channel_t ch)
 
 
 /* TODO : Make this into a private function... */
+/* Note that since we use a 16-bit timer for frequency generation then we
+ * cannot use intervals larger than 0xffffu.
+ *
+ * In practice this means that maximum interval is around 20ms or 45Hz.
+ *
+ * Maybe if it turns out that we do need to use frequecies lower than 5Hz, then
+ * we could use the 32 bit timer and drive the output pin directly?
+ *
+ * */
 Public Boolean frequency_setInterval(U32 interval, frequency_Channel_t ch)
 {
-    /* Since this is a frequency generator then the duty cycle will always be 50% s*/
+    /* Since this is a frequency generator then the duty cycle will always be 50% */
     Timer_A_PWMConfig * conf_ptr;
     U32 duty_cycle;
     Boolean res = FALSE;
 
-    duty_cycle = interval / 2;
-
-    if (duty_cycle < 0xffffu)
+    if (interval < 0xffffu)
     {
+        duty_cycle = interval / 2;
         conf_ptr = &priv_freq_pwm_cfg[ch];
         conf_ptr->timerPeriod = interval;
         conf_ptr->dutyCycle = (U16)duty_cycle;
