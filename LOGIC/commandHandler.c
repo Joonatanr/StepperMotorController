@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "misc.h"
 
+/* TODO : Echo should probably be defined in the uartmgr module. */
 //#define ECHO_ENABLED
 
 
@@ -22,7 +23,7 @@ typedef Boolean (*SubFunctionHandler)(Stepper_Id id, int arg);
 
 typedef struct
 {
-    char prefix;
+    const char * prefix;
     CommandHandlerFunc handler_fptr;
 } CommandHandler_T;
 
@@ -41,6 +42,7 @@ Private Boolean handleCommand(char * cmd, U16 msg_len);
 /* Command handlers */
 Private Boolean HandleCommandToStepper(char * data, U8 len);
 Private Boolean HandleQueryState(char * data, U8 len);
+Private Boolean HandleExtendedQueryState(char * data, U8 len);
 
 /* Subfunction handlers */
 Private Boolean HandleCommandTimerSet(Stepper_Id id, int arg);
@@ -48,6 +50,7 @@ Private Boolean HandleCommandRPMSet(Stepper_Id id, int arg);
 Private Boolean HandleCommandMicroStepSet(Stepper_Id id, int arg);
 
 
+Private Boolean appendResponse(const char * resp);
 
 
 /************************************ Private variable definitions ***********************************/
@@ -57,8 +60,9 @@ Public UartCommandHandler CmdHandlerFunc = handleCommand;
 
 Private const CommandHandler_T priv_command_handlers[] =
 {
-     { .prefix = 'S', .handler_fptr = HandleCommandToStepper    },
-     { .prefix = 'Q', .handler_fptr = HandleQueryState          }
+     { .prefix = "S", .handler_fptr = HandleCommandToStepper    },
+     { .prefix = "Q", .handler_fptr = HandleQueryState          },
+     { .prefix = "EQ",.handler_fptr = HandleExtendedQueryState  }
 };
 
 
@@ -70,19 +74,21 @@ Private const SubFunc_T priv_subfunctions[] =
 };
 
 
-#define MAX_RESPONSE_LENGTH 64u
-#define GENERAL_PURPOSE_STR_LENGTH 32u
+#define MAX_RESPONSE_LENGTH 128u
+#define GENERAL_PURPOSE_STR_LENGTH 64u
 
-Private char priv_response_str[MAX_RESPONSE_LENGTH + 1];
+Private char priv_response_buf[MAX_RESPONSE_LENGTH + 1];
 Private char priv_gp_str[GENERAL_PURPOSE_STR_LENGTH + 1u];
 
+Private char * priv_response_ptr;   //Points to the end of the current response.
+Private U16    priv_remaining_buf_len;  //Keeps track of the number of bytes remaining in the response buffer.
 
 /********************************** Public function definitions  **************************************/
 
 
 Public void commandHandler_init(void)
 {
-
+    priv_response_ptr = NULL;
 }
 
 
@@ -94,12 +100,23 @@ Private Boolean handleCommand(char * cmd, U16 msg_len)
     Boolean res = FALSE;
     U8 ix;
 
-    /* Set response string to 0 */
-    priv_response_str[0] = 0;
+    /* Set up response buffer. Also set up a pointer to the beginning of the response buffer. This keeps track of the end of the response string. */
+    priv_response_buf[0] = 0;
+    priv_response_ptr = &priv_response_buf[0];
+    priv_remaining_buf_len = MAX_RESPONSE_LENGTH;
+
+    /* Create the response header */
+    strncpy(priv_gp_str, cmd, msg_len);
+    priv_gp_str[msg_len] = '-';
+    priv_gp_str[msg_len + 1] = '>';
+    priv_gp_str[msg_len + 2] = 0;
+
+    /* appendResponse function should be used to add to the response string. */
+    appendResponse(priv_gp_str);
 
     for (ix = 0u; ix < NUMBER_OF_ITEMS(priv_command_handlers); ix++)
     {
-        if (cmd[0] == priv_command_handlers[ix].prefix)
+        if(strncmp(priv_command_handlers[ix].prefix, cmd, strlen(priv_command_handlers[ix].prefix)) == 0)
         {
            res = priv_command_handlers[ix].handler_fptr(cmd + 1, msg_len - 1u);
            break;
@@ -112,11 +129,10 @@ Private Boolean handleCommand(char * cmd, U16 msg_len)
     uartmgr_send_char('\n');
 #endif
 
-
-    if (strlen(priv_response_str) > 0)
+    if (strlen(priv_response_buf) > 0)
     {
-        addchar(priv_response_str, '\n');
-        uartmgr_send_str(priv_response_str);
+        addchar(priv_response_buf, '\n');
+        uartmgr_send_str(priv_response_buf);
     }
 
     return res;
@@ -179,11 +195,38 @@ Private Boolean HandleQueryState(char * data, U8 len)
     for (id = 0u; id < NUMBER_OF_STEPPERS; id++)
     {
         stepper_getState((Stepper_Id)id, &query);
-        sprintf(priv_gp_str, "S%d:%dRPM ", id, query.rpm); /* TODO : Might not want to use sprintf here, as it takes a lot of processing power. */
-        strcat(priv_response_str, priv_gp_str);
+        sprintf(priv_gp_str, "S%d:%dRPM(%d step) ", id, query.rpm, query.microstepping_mode); /* TODO : Might not want to use sprintf here, as it takes a lot of processing power. */
+        appendResponse(priv_gp_str);
     }
 
     return TRUE;
+}
+
+
+/* Format should be easily parseable */
+/* S1-> RPM:240, Step:32, Int:20000 */
+/* Returns extended data for a given stepper. */
+Private Boolean HandleExtendedQueryState(char * data, U8 len)
+{
+    U8 id;
+    Stepper_Query_t query;
+    Boolean res;
+
+    if (len == 0u)
+    {
+        return FALSE;
+    }
+
+    id = data[0];
+    res = stepper_getState((Stepper_Id)id, &query);
+
+    if (res)
+    {
+        sprintf(priv_gp_str, "S%d-> RPM:%d, Step:%d, Int:%d", id, query.rpm, query.microstepping_mode, query.interval);
+        appendResponse(priv_gp_str);
+    }
+
+    return res;
 }
 
 
@@ -226,5 +269,35 @@ Private Boolean HandleCommandMicroStepSet(Stepper_Id id, int arg)
 }
 
 
+/********************************* Private function definitions ********************************/
 
+/* Appends to the end of an existing response string. */
+/* If there is no more room, then we simply cut off the string.     */
+/* This function also keeps track of the remaining buffer length.   */
+/* TODO : Test this. */
+Private Boolean appendResponse(const char * resp)
+{
+    U16 resp_len;
+    Boolean res = TRUE;
+
+    if (priv_response_ptr == NULL)
+    {
+        //Something has gone really wrong...
+        return FALSE;
+    }
+
+    resp_len = strlen(resp);
+
+    if (resp_len > priv_remaining_buf_len)
+    {
+        resp_len = priv_remaining_buf_len;
+        res = FALSE; //Indicate that the response did not fit.
+    }
+
+    strncpy(priv_response_ptr, resp, resp_len);
+    priv_response_ptr  += resp_len;
+    priv_remaining_buf_len -= resp_len;
+
+    return res;
+}
 
