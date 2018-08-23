@@ -31,9 +31,6 @@ Private const ChannelConfig_t   priv_freq_conf[FRQ_NUMBER_OF_CHANNELS] =
 };
 
 
-Private Boolean setInterval(U32 interval, frequency_Channel_t ch);
-
-
 Private Timer_A_PWMConfig       priv_freq_pwm_cfg[FRQ_NUMBER_OF_CHANNELS];
 
 

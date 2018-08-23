@@ -25,7 +25,7 @@ void main(void)
     uartmgr_init();
 
     /* Initialize frequency generator */
-    frequency_init(),
+    frequency_init();
 
     /* Initialize logic layer. */
     commandHandler_init();

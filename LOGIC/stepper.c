@@ -179,6 +179,13 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
     {
         state_ptr->target_speed = rpm;
         microsteps_per_minute = rpm * state_ptr->microsteps_per_round;
+
+        //Wake up if sleeping.
+        if (priv_stepper_conf[id].sleep_pin.port != 0)
+        {
+            GPIO_setOutputHighOnPin(priv_stepper_conf[id].sleep_pin.port, priv_stepper_conf[id].sleep_pin.pin);
+        }
+
         res = frequency_setFrequency(microsteps_per_minute, (frequency_Channel_t)id);
     }
 

@@ -100,6 +100,9 @@ Private Boolean handleCommand(char * cmd, U16 msg_len)
     Boolean res = FALSE;
     U8 ix;
 
+    //TODO : This is quick fix, must remove later.
+    msg_len = msg_len - 2;
+
     /* Set up response buffer. Also set up a pointer to the beginning of the response buffer. This keeps track of the end of the response string. */
     priv_response_buf[0] = 0;
     priv_response_ptr = &priv_response_buf[0];
@@ -295,6 +298,7 @@ Private Boolean appendResponse(const char * resp)
     }
 
     strncpy(priv_response_ptr, resp, resp_len);
+    priv_response_ptr[resp_len] = 0; //Add 0 terminator just in case.
     priv_response_ptr  += resp_len;
     priv_remaining_buf_len -= resp_len;
 
