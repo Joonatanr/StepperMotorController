@@ -305,3 +305,24 @@ Private Boolean appendResponse(const char * resp)
     return res;
 }
 
+#if 0
+//TODO : Finish this.
+//Returns length of string.
+Private U8 removeRn(char * str)
+{
+    U8 res = 0u;
+    char * ps = str;
+
+    while(*ps)
+    {
+        res++;
+        ps++;
+
+        if ((*ps == '\n') || (*ps == '\r'))
+        {
+            *ps = 0;
+            return res;
+        }
+    }
+}
+#endif
