@@ -87,8 +87,8 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
      },
 
      { /* Stepper 3 */
-       .reset_pin = {0, 0},
-       .sleep_pin = {0, 0},
+       .reset_pin = { GPIO_PORT_P10, GPIO_PIN2 },
+       .sleep_pin = { GPIO_PORT_P9,  GPIO_PIN2 },
 
        .m0_pin =    { 0u, 0u },
        .m1_pin =    { 0u, 0u },
