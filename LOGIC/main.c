@@ -5,6 +5,7 @@
 #include "stepper.h"
 #include "commandHandler.h"
 #include "frequency.h"
+#include "spidrv.h"
 
 /**
  * main.c
@@ -26,6 +27,9 @@ void main(void)
 
     /* Initialize frequency generator */
     frequency_init();
+
+    /* Initialize SPI driver. */
+    spidrv_init();
 
     /* Initialize logic layer. */
     commandHandler_init();
