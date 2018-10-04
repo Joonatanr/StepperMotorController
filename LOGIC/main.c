@@ -28,6 +28,16 @@ void main(void)
     /* Initialize frequency generator */
     frequency_init();
 
+    set_led_two_blue(TRUE);
+    set_led_two_green(TRUE);
+    set_led_two_red(TRUE);
+
+    delay_msec(3000u);
+
+    set_led_two_blue(FALSE);
+    set_led_two_green(FALSE);
+    set_led_two_red(FALSE);
+
     /* Initialize SPI driver. */
     spidrv_init();
 

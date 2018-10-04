@@ -23,7 +23,7 @@ Private void mainTimerInterrupt(void);
 
 
 
-Private volatile U16 priv_delay_counter = 0u;
+volatile U16 priv_delay_counter = 0u;
 
 
 /***************************** Public function definitions ******************************/
@@ -104,12 +104,12 @@ Private void timer_init(void)
     /* Set up the 32-bit timer */
 
     /* Main clock is at 24MHz                           */
-    /* Set up the 32 bit timer for 10msec interrupts    */
+    /* Set up the 32 bit timer for 1msec interrupts    */
 
     Timer32_initModule(TIMER32_BASE, TIMER32_PRESCALER_16, TIMER32_32BIT, TIMER32_PERIODIC_MODE);
     Timer32_registerInterrupt(TIMER32_0_INTERRUPT, mainTimerInterrupt);
 
-    Timer32_setCount(TIMER32_0_BASE, 15000u);
+    Timer32_setCount(TIMER32_0_BASE, 1500u);
     Timer32_startTimer(TIMER32_0_BASE, FALSE);
 
 }
@@ -129,6 +129,7 @@ Private void mainTimerInterrupt(void)
 
     if (++counter >= 10u)
     {
+        counter = 0u;
         timer_10msec_callback();
     }
 
