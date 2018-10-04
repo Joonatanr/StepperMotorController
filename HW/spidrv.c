@@ -13,8 +13,8 @@
 
 /* Ports :
  *
- * 3.6 - SIMO
- * 3.7 - SOMI
+ * 3.6 - SOMI We send out data here.
+ * 3.7 - SIMO We receive data here.
  * 3.5 - CLK
  *
  * */
