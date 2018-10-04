@@ -66,9 +66,14 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
        .reset_pin = { GPIO_PORT_P6, GPIO_PIN6 },
        .sleep_pin = { GPIO_PORT_P6, GPIO_PIN7 },
 
+       .m0_pin    = { GPIO_PORT_P1, GPIO_PIN7 },
+       .m1_pin    = { GPIO_PORT_P5, GPIO_PIN0 },
+       .m2_pin    = { GPIO_PORT_P5, GPIO_PIN2 }
+/*
        .m0_pin =    { GPIO_PORT_P3, GPIO_PIN7 },
        .m1_pin =    { GPIO_PORT_P3, GPIO_PIN5 },
        .m2_pin =    { GPIO_PORT_P3, GPIO_PIN6 },
+*/
 
        .frq_ch = FRQ_CH2,
        .max_speed = 1000u
