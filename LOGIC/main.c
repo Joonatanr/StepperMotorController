@@ -6,13 +6,13 @@
 #include "commandHandler.h"
 #include "frequency.h"
 #include "spidrv.h"
+#include "Scheduler.h"
 
 /**
  * main.c
  */
 
 Private void timer_10msec(void);
-Private void timer_1sec(void);
 
 Public TimerHandler timer_10msec_callback = timer_10msec;
 
@@ -20,16 +20,24 @@ void main(void)
 {
 	WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;		// stop watchdog timer
 
+	/* Low level HW init. */
 	register_init();
 
-    /* Initialize USART hardware. */
+	/* TODO : Move these init functions also under the scheduler in the future. */
+
+	/* Initialize USART hardware. */
     uartmgr_init();
 
     /* Initialize frequency generator */
     frequency_init();
 
+    stepper_init();
+
+    /* Initialize command handler. */
+    commandHandler_init();
+
     set_led_two_blue(TRUE);
-    set_led_two_green(TRUE);
+    set_led_two_green(FALSE);
     set_led_two_red(TRUE);
 
     delay_msec(3000u);
@@ -38,21 +46,17 @@ void main(void)
     set_led_two_green(FALSE);
     set_led_two_red(FALSE);
 
-    /* Initialize SPI driver. */
-    spidrv_init();
 
-    /* Initialize logic layer. */
-    commandHandler_init();
+    /* Initialize main scheduler.*/
+    Scheduler_initTasks();
 
-    stepper_init();
-
-    set_led_two_blue(FALSE);
-    set_led_two_green(FALSE);
-    set_led_two_red(FALSE);
+    /* Start tasks */
+    Scheduler_StartTasks();
 
 	while(1)
 	{
 	    /* Currently just continuously poll the USART module */
+	    /* This basically constitutes the background layer, taking up any free CPU time. */
 	    uartmgr_cyclic();
 	}
 
@@ -64,21 +68,8 @@ void main(void)
 
 Private void timer_10msec(void)
 {
-    static U8 second_cnt = 0u;
-
-    second_cnt++;
-
-    if (second_cnt >= 100u)
-    {
-        second_cnt = 0u;
-        timer_1sec();
-    }
+    /* Main scheduler is called here, might have to call this more frequently... */
+    Scheduler_cyclic10ms();
 }
 
-Private void timer_1sec(void)
-{
-    static U8 led_state;
 
-    led_state = !led_state;
-    set_led_one((Boolean)led_state);
-}

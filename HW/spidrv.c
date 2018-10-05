@@ -106,6 +106,12 @@ Public void spidrv_init(void)
 }
 
 
+Public void spidrv_cyclic10ms(void)
+{
+    /* TODO : Implement this. */
+}
+
+
 void DMA_INT1_IRQHandler(void)
 {
     MAP_DMA_clearInterruptFlag(4);

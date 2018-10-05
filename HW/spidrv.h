@@ -12,6 +12,7 @@
 #include "typedefs.h"
 
 extern void spidrv_init(void);
+extern void spidrv_cyclic10ms(void);
 
 
 #endif /* HW_SPIDRV_H_ */
