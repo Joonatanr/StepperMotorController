@@ -32,11 +32,13 @@ void main(void)
     /* Initialize frequency generator */
     frequency_init();
 
+    /* Initialize Hi level stepper motor control. */
     stepper_init();
 
     /* Initialize command handler. */
     commandHandler_init();
 
+    /* TODO : This should be removed in later versions. */
     set_led_two_blue(TRUE);
     set_led_two_green(FALSE);
     set_led_two_red(TRUE);
