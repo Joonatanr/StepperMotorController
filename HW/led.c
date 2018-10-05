@@ -37,6 +37,11 @@ Private void led_cyclic1000ms(void);
 Public void led_init(void)
 {
     /* Port initialisation is currently done elsewhere. */
+    U8 ix;
+    for (ix = 0u; ix < NUMBER_OF_LEDS; ix++)
+    {
+        priv_led_conf[ix].counter = 0;
+    }
 }
 
 
