@@ -53,8 +53,11 @@ uint8_t priv_tx_data[MAP_SPI_MSG_LENGTH] = " Hello, this is slave SPI ";
 uint8_t priv_rx_data[MAP_SPI_MSG_LENGTH] = { 0 };
 
 volatile Boolean priv_is_receive_complete = FALSE;
-Private U8 priv_counter = 0u;
 
+#ifdef SPIDRV_DEBUG
+Private U8 priv_counter = 0u;
+Private char priv_debug_str[64];
+#endif
 
 Public void spidrv_init(void)
 {
@@ -88,6 +91,7 @@ Public void spidrv_init(void)
 }
 
 
+
 Public void spidrv_cyclic10ms(void)
 {
     if (priv_is_receive_complete)
@@ -96,11 +100,12 @@ Public void spidrv_cyclic10ms(void)
 
 #ifdef SPIDRV_DEBUG
         /* TODO : Definitely disable this once done with initial testing. */
-        /* TODO : We should implement asynchronous UART transmit for this kind of cases. */
         led_show_period(LED_TWO_BLUE, 200u);
-        uartmgr_send_str("SPI:");
-        uartmgr_send_str((char*)priv_rx_data);
-        uartmgr_send_rn();
+
+        strcpy(priv_debug_str, "SPI:");
+        strcat(priv_debug_str, (char*)priv_rx_data);
+        strcat(priv_debug_str, "\r\n");
+        uartmgr_send_str_async(priv_debug_str);
 #endif
 
         priv_counter++;

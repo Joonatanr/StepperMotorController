@@ -29,7 +29,8 @@ Private U8 priv_receive_cnt;
 Private U8 priv_receive_flag = 0;
 Private char priv_char_buf[16];
 
-
+Private char priv_async_buf[UART_BUF_LEN];
+volatile Boolean priv_is_async_transmit_in_progress = FALSE;
 
 /* Set to 9600 baudrate */
 Private const eUSCI_UART_Config uartConfig =
@@ -80,6 +81,19 @@ Public void uartmgr_send_str(const char * str)
         uartmgr_send_char(*ps);
         ps++;
     }
+}
+
+
+/* Transmits string on UART without blocking the CPU. */
+Public void uartmgr_send_str_async(const char * str)
+{
+    if (priv_is_async_transmit_in_progress)
+    {
+        return;
+    }
+
+    strcpy(priv_async_buf, str);
+    priv_is_async_transmit_in_progress = TRUE;
 }
 
 
@@ -172,6 +186,13 @@ Public void uartmgr_cyclic(void)
             uartmgr_send_str("ERR");
             uartmgr_send_rn();
         }
+    }
+
+    /* This is called from the main (background thread) so interrupts can still happen during sending. */
+    if (priv_is_async_transmit_in_progress)
+    {
+        uartmgr_send_str(priv_async_buf);
+        priv_is_async_transmit_in_progress = FALSE;
     }
 }
 
