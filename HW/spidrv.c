@@ -45,14 +45,16 @@ __attribute__ ((aligned (1024)))
 #elif defined(__CC_ARM)
 __align(1024)
 #endif
-static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[32];
+static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[32]; //According to documentation the size of this should correspond to the number of available DMA channels, so not buffer size.
 
 #define MAP_SPI_MSG_LENGTH    32u /* This must probably be the same as in master. */
 
-uint8_t priv_tx_data[MAP_SPI_MSG_LENGTH] = "Hello, this is slave SPI";
+uint8_t priv_tx_data[MAP_SPI_MSG_LENGTH] = " Hello, this is slave SPI ";
 uint8_t priv_rx_data[MAP_SPI_MSG_LENGTH] = { 0 };
 
 volatile Boolean priv_is_receive_complete = FALSE;
+Private U8 priv_counter = 0u;
+
 
 Public void spidrv_init(void)
 {
@@ -100,6 +102,11 @@ Public void spidrv_cyclic10ms(void)
         uartmgr_send_str((char*)priv_rx_data);
         uartmgr_send_rn();
 #endif
+
+        priv_counter++;
+        priv_tx_data[0]  = priv_counter;
+        priv_tx_data[15] = priv_counter;
+
         /* Set up next receive cycle. */
         setupTransfer();
     }
@@ -112,22 +119,19 @@ Private void setupTransfer(void)
 {
     /* Slave Settings */
     /* Setup the TX transfer characteristics and buffers */
-    MAP_DMA_setChannelControl(DMA_CH4_EUSCIB2TX0 | UDMA_PRI_SELECT,
-    UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1);
-    MAP_DMA_setChannelTransfer(DMA_CH4_EUSCIB2TX0 | UDMA_PRI_SELECT,
-    UDMA_MODE_BASIC, priv_tx_data,
-            (void *) MAP_SPI_getTransmitBufferAddressForDMA(EUSCI_B2_BASE),
-            MAP_SPI_MSG_LENGTH);
+    MAP_DMA_setChannelControl(DMA_CH4_EUSCIB2TX0 | UDMA_PRI_SELECT, UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1);
+
+    MAP_DMA_setChannelTransfer( DMA_CH4_EUSCIB2TX0 | UDMA_PRI_SELECT, UDMA_MODE_BASIC, priv_tx_data,
+                                (void *) MAP_SPI_getTransmitBufferAddressForDMA(EUSCI_B2_BASE),
+                                MAP_SPI_MSG_LENGTH);
 
     /* Setup the RX transfer characteristics & buffers */
-    MAP_DMA_setChannelControl(DMA_CH5_EUSCIB2RX0 | UDMA_PRI_SELECT,
-    UDMA_SIZE_8 | UDMA_SRC_INC_NONE | UDMA_DST_INC_8 | UDMA_ARB_1);
-    MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIB2RX0 | UDMA_PRI_SELECT,
-    UDMA_MODE_BASIC,
-            (void *) MAP_SPI_getReceiveBufferAddressForDMA(EUSCI_B2_BASE),
-            priv_rx_data,
-            MAP_SPI_MSG_LENGTH);
+    MAP_DMA_setChannelControl(DMA_CH5_EUSCIB2RX0 | UDMA_PRI_SELECT, UDMA_SIZE_8 | UDMA_SRC_INC_NONE | UDMA_DST_INC_8 | UDMA_ARB_1);
 
+    MAP_DMA_setChannelTransfer( DMA_CH5_EUSCIB2RX0 | UDMA_PRI_SELECT, UDMA_MODE_BASIC,
+                                (void *) MAP_SPI_getReceiveBufferAddressForDMA(EUSCI_B2_BASE),
+                                priv_rx_data,
+                                MAP_SPI_MSG_LENGTH);
 
     /* Enable DMA interrupt */
     MAP_DMA_assignInterrupt(INT_DMA_INT1, 5); /* Channel 5 is used for Slave Rx */
