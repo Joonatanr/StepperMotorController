@@ -8,6 +8,7 @@
 #include "spidrv.h"
 #include "driverlib.h"
 #include "uartmgr.h"
+#include "led.h"
 
 /* This file should contain the low-level SPI slave mode driver. */
 /* SPI Configuration Parameter */
@@ -94,6 +95,7 @@ Public void spidrv_cyclic10ms(void)
 #ifdef SPIDRV_DEBUG
         /* TODO : Definitely disable this once done with initial testing. */
         /* TODO : We should implement asynchronous UART transmit for this kind of cases. */
+        led_show_period(LED_TWO_BLUE, 200u);
         uartmgr_send_str("SPI:");
         uartmgr_send_str((char*)priv_rx_data);
         uartmgr_send_rn();

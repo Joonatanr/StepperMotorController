@@ -7,6 +7,7 @@
 #include "frequency.h"
 #include "spidrv.h"
 #include "Scheduler.h"
+#include "led.h"
 
 /**
  * main.c

@@ -9,7 +9,6 @@
 #include "register.h"
 #include "uartmgr.h"
 #include <driverlib.h>
-#include "ports.h"
 
 /***************************** Private function forward declarations ********************/
 
@@ -56,6 +55,26 @@ Public void delay_msec(U16 msec)
 {
     priv_delay_counter = msec;
     while(priv_delay_counter > 0u);
+}
+
+
+Public void ports_init(void)
+{
+    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0);
+    GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2);
+}
+
+
+Public void ports_setPort(U32 port, U32 pin, Boolean value)
+{
+    if (value)
+    {
+        GPIO_setOutputHighOnPin(port, pin);
+    }
+    else
+    {
+        GPIO_setOutputLowOnPin(port, pin);
+    }
 }
 
 /***************************** Private function definitions ******************************/
@@ -133,31 +152,4 @@ Private void mainTimerInterrupt(void)
         timer_10msec_callback();
     }
 
-}
-
-
-/****************************************************************************************
- *
- * LED controls
- *
- ****************************************************************************************/
-
-Public void set_led_one(Boolean state)
-{
-    ports_setPort(GPIO_PORT_P1, GPIO_PIN0, state);
-}
-
-Public void set_led_two_red(Boolean state)
-{
-    ports_setPort(GPIO_PORT_P2, GPIO_PIN0, state);
-}
-
-Public void set_led_two_green(Boolean state)
-{
-    ports_setPort(GPIO_PORT_P2, GPIO_PIN1, state);
-}
-
-Public void set_led_two_blue(Boolean state)
-{
-    ports_setPort(GPIO_PORT_P2, GPIO_PIN2, state);
 }

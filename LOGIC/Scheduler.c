@@ -9,17 +9,18 @@
 #include "register.h"
 #include <driverlib.h>
 #include "spidrv.h"
+#include "led.h"
 
 
 /*************  Private function prototypes.  **************/
 
-Private void led_cyclic1000ms(void);
+
 
 /* This array contains the tasks that run all the time. */
 /* Small incremental changes :) - So lets enable the modules part first and then look at this part. */
 Private const Scheduler_LogicTask priv_tasks[NUMBER_OF_SCHEDULER_TASKS] =
 {
-     {.init_fptr = NULL,        .start_fptr = NULL, .cyclic_fptr = led_cyclic1000ms,  .stop_fptr = NULL, .period = 1000u }, //TASK_LED_BLINK - For showing scheduler works OK.
+     {.init_fptr = led_init,    .start_fptr = NULL, .cyclic_fptr = led_cyclic50ms,    .stop_fptr = NULL, .period = 50u   }, //TASK_LED_BLINK - For showing scheduler works OK.
      {.init_fptr = spidrv_init, .start_fptr = NULL, .cyclic_fptr = spidrv_cyclic10ms, .stop_fptr = NULL, .period = 10u   }, //TASK_CYCLIC_SPIDRV
 };
 
@@ -89,15 +90,5 @@ void Scheduler_cyclic10ms(void)
             }
         }
     }
-}
-
-
-/**********  Private function definitions *************/
-Private void led_cyclic1000ms(void)
-{
-    static U8 led_state;
-
-    led_state = !led_state;
-    set_led_one((Boolean)led_state);
 }
 

@@ -10,7 +10,6 @@
 #include "driverlib.h"
 #include "register.h"
 #include "frequency.h"
-#include "ports.h"
 
 /************************** Private function forward declarations *****************************/
 
