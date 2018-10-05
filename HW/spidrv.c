@@ -7,6 +7,7 @@
 
 #include "spidrv.h"
 #include "driverlib.h"
+#include "uartmgr.h"
 
 /* This file should contain the low-level SPI slave mode driver. */
 /* SPI Configuration Parameter */
@@ -19,7 +20,13 @@
  *
  * */
 
+#define SPIDRV_DEBUG
 
+/*********************************** Private function forward declarations **********************************/
+
+Private void setupTransfer(void);
+
+/*********************************** Private variable declarations ******************************************/
 const eUSCI_SPI_SlaveConfig spiSlaveConfig =
 { EUSCI_B_SPI_MSB_FIRST,
         EUSCI_B_SPI_PHASE_DATA_CAPTURED_ONFIRST_CHANGED_ON_NEXT,
@@ -41,10 +48,10 @@ static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[32];
 
 #define MAP_SPI_MSG_LENGTH    32u /* This must probably be the same as in master. */
 
-uint8_t sltxData[MAP_SPI_MSG_LENGTH] = "Hello, this is slave SPI";
-uint8_t slrxData[MAP_SPI_MSG_LENGTH] =
-{ 0 };
+uint8_t priv_tx_data[MAP_SPI_MSG_LENGTH] = "Hello, this is slave SPI";
+uint8_t priv_rx_data[MAP_SPI_MSG_LENGTH] = { 0 };
 
+volatile Boolean priv_is_receive_complete = FALSE;
 
 Public void spidrv_init(void)
 {
@@ -70,16 +77,43 @@ Public void spidrv_init(void)
 
     /* General setup is complete from here on. */
 
-    /* TODO : Consider initiating the transmission with CS pin? */
+    /* TODO : Consider initiating the transmission with CS pin?                  */
+    /* Currently we do not use CS pin, but in the future should probably add it. */
+    /* Otherwise not sure if we can recover if a single transfer fails for whatever reason */
+    setupTransfer();
 
-    /* Setup the transfer. Currently only 1 for testing. */
+}
 
+
+Public void spidrv_cyclic10ms(void)
+{
+    if (priv_is_receive_complete)
+    {
+        priv_is_receive_complete = FALSE;
+
+#ifdef SPIDRV_DEBUG
+        /* TODO : Definitely disable this once done with initial testing. */
+        /* TODO : We should implement asynchronous UART transmit for this kind of cases. */
+        uartmgr_send_str("SPI:");
+        uartmgr_send_str((char*)priv_rx_data);
+        uartmgr_send_rn();
+#endif
+        /* Set up next receive cycle. */
+        setupTransfer();
+    }
+}
+
+
+/*********************************** Private function definitions. **********************************/
+
+Private void setupTransfer(void)
+{
     /* Slave Settings */
     /* Setup the TX transfer characteristics and buffers */
     MAP_DMA_setChannelControl(DMA_CH4_EUSCIB2TX0 | UDMA_PRI_SELECT,
     UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1);
     MAP_DMA_setChannelTransfer(DMA_CH4_EUSCIB2TX0 | UDMA_PRI_SELECT,
-    UDMA_MODE_BASIC, sltxData,
+    UDMA_MODE_BASIC, priv_tx_data,
             (void *) MAP_SPI_getTransmitBufferAddressForDMA(EUSCI_B2_BASE),
             MAP_SPI_MSG_LENGTH);
 
@@ -89,7 +123,7 @@ Public void spidrv_init(void)
     MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIB2RX0 | UDMA_PRI_SELECT,
     UDMA_MODE_BASIC,
             (void *) MAP_SPI_getReceiveBufferAddressForDMA(EUSCI_B2_BASE),
-            slrxData,
+            priv_rx_data,
             MAP_SPI_MSG_LENGTH);
 
 
@@ -102,21 +136,15 @@ Public void spidrv_init(void)
     MAP_DMA_enableInterrupt(INT_DMA_INT1);
     MAP_DMA_enableChannel(5);
     MAP_DMA_enableChannel(4);
-
 }
-
-
-Public void spidrv_cyclic10ms(void)
-{
-    /* TODO : Implement this. */
-}
-
 
 void DMA_INT1_IRQHandler(void)
 {
     MAP_DMA_clearInterruptFlag(4);
     MAP_DMA_clearInterruptFlag(5);
 
+    /* Set flag for processing data. */
+    priv_is_receive_complete = TRUE;
 
     /* Disable the interrupt to allow execution */
     MAP_Interrupt_disableInterrupt(INT_DMA_INT1);
