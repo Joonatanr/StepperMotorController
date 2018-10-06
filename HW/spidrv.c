@@ -94,6 +94,8 @@ Public void spidrv_init(void)
 
 Public void spidrv_cyclic10ms(void)
 {
+    U16 debug_len;
+
     if (priv_is_receive_complete)
     {
         priv_is_receive_complete = FALSE;
@@ -102,10 +104,16 @@ Public void spidrv_cyclic10ms(void)
         /* TODO : Definitely disable this once done with initial testing. */
         led_show_period(LED_TWO_BLUE, 200u);
 
-        strcpy(priv_debug_str, "SPI:");
-        strcat(priv_debug_str, (char*)priv_rx_data);
-        strcat(priv_debug_str, "\r\n");
-        uartmgr_send_str_async(priv_debug_str);
+        strcpy(priv_debug_str, "SPI:<");
+        debug_len = 5u;
+
+        memcpy(priv_debug_str + debug_len, priv_rx_data, MAP_SPI_MSG_LENGTH);
+        debug_len += MAP_SPI_MSG_LENGTH;
+
+        priv_debug_str[debug_len++] = '>';
+        priv_debug_str[debug_len++] = '\r';
+        priv_debug_str[debug_len++] = '\n';
+        uartmgr_send_str_async(priv_debug_str, debug_len);
 #endif
 
         priv_counter++;

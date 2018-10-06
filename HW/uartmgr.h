@@ -21,7 +21,8 @@ extern void uartmgr_send_str(const char * str);
 extern U8 uartmgr_receiveData(char * dest);
 extern void uartmgr_send_number(long nr);
 extern void uartmgr_send_rn(void);
-extern void uartmgr_send_str_async(const char * str);
+extern void uartmgr_send_str_async(const char * str, U16 len);
+extern void uartmgr_send_data(const U8 * data, U16 len);
 
 extern void uartmgr_init(void);
 extern void uartmgr_cyclic(void);

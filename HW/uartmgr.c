@@ -29,8 +29,10 @@ Private U8 priv_receive_cnt;
 Private U8 priv_receive_flag = 0;
 Private char priv_char_buf[16];
 
-Private char priv_async_buf[UART_BUF_LEN];
+Private U8 priv_async_buf[UART_BUF_LEN];
+
 volatile Boolean priv_is_async_transmit_in_progress = FALSE;
+volatile U16     priv_async_transmit_len;
 
 /* Set to 9600 baudrate */
 Private const eUSCI_UART_Config uartConfig =
@@ -84,16 +86,28 @@ Public void uartmgr_send_str(const char * str)
 }
 
 
+Public void uartmgr_send_data(const U8 * data, U16 len)
+{
+    const U8 * data_ptr = data;
+    while (len--)
+    {
+        uartmgr_send_char(*data_ptr);
+        data_ptr++;
+    }
+}
+
+
 /* Transmits string on UART without blocking the CPU. */
-Public void uartmgr_send_str_async(const char * str)
+Public void uartmgr_send_str_async(const char * str, U16 len)
 {
     if (priv_is_async_transmit_in_progress)
     {
         return;
     }
 
-    strcpy(priv_async_buf, str);
+    memcpy(priv_async_buf, str, len);
     priv_is_async_transmit_in_progress = TRUE;
+    priv_async_transmit_len = len;
 }
 
 
@@ -191,7 +205,8 @@ Public void uartmgr_cyclic(void)
     /* This is called from the main (background thread) so interrupts can still happen during sending. */
     if (priv_is_async_transmit_in_progress)
     {
-        uartmgr_send_str(priv_async_buf);
+        //uartmgr_send_str(priv_async_buf);
+        uartmgr_send_data(priv_async_buf, priv_async_transmit_len);
         priv_is_async_transmit_in_progress = FALSE;
     }
 }
