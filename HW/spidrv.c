@@ -117,8 +117,14 @@ Public void spidrv_cyclic10ms(void)
 #endif
 
         priv_counter++;
-        priv_tx_data[0]  = priv_counter;
-        priv_tx_data[15] = priv_counter;
+
+        if (priv_counter > 9u)
+        {
+            priv_counter = 0u;
+        }
+
+        priv_tx_data[0]  = '0' + priv_counter;
+        priv_tx_data[15] = '0' + priv_counter;
 
         /* Set up next receive cycle. */
         setupTransfer();
