@@ -15,8 +15,8 @@
 
 /* Ports :
  *
- * 3.6 - SOMI We send out data here.
- * 3.7 - SIMO We receive data here.
+ * 3.6 - MOSI We receive data here.
+ * 3.7 - MISO We send data here.
  * 3.5 - CLK
  *
  * */
