@@ -86,6 +86,8 @@ Public void spidrv_init(void)
 
     /* Configuring P1.1 as an input and enabling interrupts */
     MAP_GPIO_setAsInputPin(GPIO_PORT_P6, GPIO_PIN4);
+    GPIO_interruptEdgeSelect(GPIO_PORT_P6, GPIO_PIN4, GPIO_LOW_TO_HIGH_TRANSITION);
+
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P6, GPIO_PIN4);
     MAP_GPIO_enableInterrupt(GPIO_PORT_P6, GPIO_PIN4);
     MAP_Interrupt_enableInterrupt(INT_PORT6);
@@ -102,7 +104,6 @@ Public void spidrv_init(void)
     //setupTransfer();
 
 }
-
 
 
 Public void spidrv_cyclic10ms(void)
@@ -153,8 +154,13 @@ Private void setupTransfer(void)
     MAP_DMA_disableChannel(5);
     MAP_DMA_disableChannel(4);
 
+    /* Disable the SPI module */
+    MAP_SPI_disableModule(EUSCI_B2_BASE);
+
     /* Delay here??*/
     __delay_cycles(100);
+    MAP_SPI_enableModule(EUSCI_B2_BASE);
+
 
     /* Slave Settings */
     /* Setup the TX transfer characteristics and buffers */
