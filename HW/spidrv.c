@@ -81,12 +81,25 @@ Public void spidrv_init(void)
     MAP_DMA_assignChannel(DMA_CH4_EUSCIB2TX0);
     MAP_DMA_assignChannel(DMA_CH5_EUSCIB2RX0);
 
+    /* Configure CS pin.    */
+    /* CS pin -> 6.4        */
+
+    /* Configuring P1.1 as an input and enabling interrupts */
+    MAP_GPIO_setAsInputPin(GPIO_PORT_P6, GPIO_PIN4);
+    MAP_GPIO_clearInterruptFlag(GPIO_PORT_P6, GPIO_PIN4);
+    MAP_GPIO_enableInterrupt(GPIO_PORT_P6, GPIO_PIN4);
+    MAP_Interrupt_enableInterrupt(INT_PORT6);
+
+    /* Enabling SRAM Bank Retention */
+    /*Why the heck do we need this??? */
+    MAP_SysCtl_enableSRAMBankRetention(SYSCTL_SRAM_BANK1);
+
     /* General setup is complete from here on. */
 
     /* TODO : Consider initiating the transmission with CS pin?                  */
     /* Currently we do not use CS pin, but in the future should probably add it. */
     /* Otherwise not sure if we can recover if a single transfer fails for whatever reason */
-    setupTransfer();
+    //setupTransfer();
 
 }
 
@@ -127,7 +140,7 @@ Public void spidrv_cyclic10ms(void)
         priv_tx_data[15] = '0' + priv_counter;
 
         /* Set up next receive cycle. */
-        setupTransfer();
+        //setupTransfer();
     }
 }
 
@@ -136,6 +149,13 @@ Public void spidrv_cyclic10ms(void)
 
 Private void setupTransfer(void)
 {
+    /* Lets disable the channel and hope this flushes existing data. */
+    MAP_DMA_disableChannel(5);
+    MAP_DMA_disableChannel(4);
+
+    /* Delay here??*/
+    __delay_cycles(100);
+
     /* Slave Settings */
     /* Setup the TX transfer characteristics and buffers */
     MAP_DMA_setChannelControl(DMA_CH4_EUSCIB2TX0 | UDMA_PRI_SELECT, UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1);
@@ -174,4 +194,17 @@ void DMA_INT1_IRQHandler(void)
     /* Disable the interrupt to allow execution */
     MAP_Interrupt_disableInterrupt(INT_DMA_INT1);
     MAP_DMA_disableInterrupt(INT_DMA_INT1);
+}
+
+/* GPIO ISR */
+void PORT6_IRQHandler(void)
+{
+    uint32_t status;
+
+    status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P6);
+    MAP_GPIO_clearInterruptFlag(GPIO_PORT_P6, status);
+
+    led_show_period(LED_TWO_GREEN, 300u);
+
+    setupTransfer();
 }
