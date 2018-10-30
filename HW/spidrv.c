@@ -18,7 +18,7 @@
  * 3.6 - MOSI We receive data here.
  * 3.7 - MISO We send data here.
  * 3.5 - CLK
- *
+ * 6.4 - CS
  * */
 
 #define SPIDRV_DEBUG
@@ -47,17 +47,10 @@ __align(1024)
 #endif
 static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[32]; //According to documentation the size of this should correspond to the number of available DMA channels, so not buffer size.
 
-#define MAP_SPI_MSG_LENGTH    32u /* This must probably be the same as in master. */
-
-uint8_t priv_tx_data[MAP_SPI_MSG_LENGTH] = " Hello, this is slave SPI ";
+uint8_t priv_tx_data[MAP_SPI_MSG_LENGTH] = { 0 };
 uint8_t priv_rx_data[MAP_SPI_MSG_LENGTH] = { 0 };
 
 volatile Boolean priv_is_receive_complete = FALSE;
-
-#ifdef SPIDRV_DEBUG
-Private U8 priv_counter = 0u;
-Private char priv_debug_str[64];
-#endif
 
 Public void spidrv_init(void)
 {
@@ -65,8 +58,6 @@ Public void spidrv_init(void)
     MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P3,
             GPIO_PIN5 | GPIO_PIN6 | GPIO_PIN7,
             GPIO_PRIMARY_MODULE_FUNCTION);
-
-    /* TODO : Check this, why are all pins configured as input pins??? */
 
     /* Configuring SPI module */
     MAP_SPI_initSlave(EUSCI_B2_BASE, &spiSlaveConfig);
@@ -98,50 +89,41 @@ Public void spidrv_init(void)
 
     /* General setup is complete from here on. */
 
-    /* TODO : Consider initiating the transmission with CS pin?                  */
-    /* Currently we do not use CS pin, but in the future should probably add it. */
-    /* Otherwise not sure if we can recover if a single transfer fails for whatever reason */
-    //setupTransfer();
-
 }
 
 
 Public void spidrv_cyclic10ms(void)
 {
-    U16 debug_len;
-
     if (priv_is_receive_complete)
     {
         priv_is_receive_complete = FALSE;
 
+
+        /* The device is configured as SPI slave, so we process commands. */
+        if (spidrv_callback != NULL)
+        {
+            spidrv_callback(priv_rx_data);
+        }
+
 #ifdef SPIDRV_DEBUG
         /* TODO : Definitely disable this once done with initial testing. */
         led_show_period(LED_TWO_BLUE, 200u);
-
-        strcpy(priv_debug_str, "SPI:<");
-        debug_len = 5u;
-
-        memcpy(priv_debug_str + debug_len, priv_rx_data, MAP_SPI_MSG_LENGTH);
-        debug_len += MAP_SPI_MSG_LENGTH;
-
-        priv_debug_str[debug_len++] = '>';
-        priv_debug_str[debug_len++] = '\r';
-        priv_debug_str[debug_len++] = '\n';
-        uartmgr_send_str_async(priv_debug_str, debug_len);
 #endif
+    }
+}
 
-        priv_counter++;
 
-        if (priv_counter > 9u)
+Public void spidrv_setResponse(U8 * data, U8 data_len)
+{
+    U8 ix;
+
+    if (data_len <= MAP_SPI_MSG_LENGTH)
+    {
+        memcpy(priv_tx_data, data, data_len);
+        for (ix = data_len; ix < MAP_SPI_MSG_LENGTH; ix++)
         {
-            priv_counter = 0u;
+            priv_tx_data[ix] = 0xffu;
         }
-
-        priv_tx_data[0]  = '0' + priv_counter;
-        priv_tx_data[15] = '0' + priv_counter;
-
-        /* Set up next receive cycle. */
-        //setupTransfer();
     }
 }
 
