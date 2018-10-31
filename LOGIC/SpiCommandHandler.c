@@ -70,6 +70,10 @@ Private const U16 priv_crcTable_16[256] = {
 };
 
 
+Private U8 priv_response_buffer[SPI_COMMAND_LENGTH];
+
+
+
 /************************************** Public function definitions ********************************************/
 
 
@@ -157,8 +161,32 @@ Public Boolean SpiCommandHandler_handleCommand(U8 * message)
 
 Private Boolean handleCommand(U8 cmd_id, U8 sub, U8 * args, U8 args_len)
 {
+    U16 checksum;
+    U16 packet_length = 13u;
+
+    /* Lets prepare a simple test response. */
+    priv_response_buffer[0] = 0xffu;
+    priv_response_buffer[1] = 0xfeu;
+    priv_response_buffer[2] = 0x00u;
+    priv_response_buffer[3] = (U8)packet_length;
+
+    priv_response_buffer[4] = cmd_id;
+    priv_response_buffer[5] = sub;
+    priv_response_buffer[6] = (U8)SPI_RESPONSE_ACK;
+
+    /* Lets write 4 data bytes, just for testing. */
+    priv_response_buffer[7]     = 0xDEu;
+    priv_response_buffer[8]     = 0xADu;
+    priv_response_buffer[9]     = 0xBEu;
+    priv_response_buffer[10]    = 0xEFu;
+
+    checksum = calculate_crc16(INITIAL_CRC_16, priv_response_buffer, packet_length - CMD_CHECKSUM_LEN);
+    priv_response_buffer[11] = (U8)(checksum >> 8u);
+    priv_response_buffer[12] = (U8)(checksum & 0xffu);
+
+    spidrv_setResponse(priv_response_buffer, packet_length);
     return TRUE;
-    /* TODO : Implement this. */
+
 }
 
 

@@ -94,6 +94,7 @@ Public void spidrv_init(void)
 
 Public void spidrv_cyclic10ms(void)
 {
+    Boolean res = FALSE;
     if (priv_is_receive_complete)
     {
         priv_is_receive_complete = FALSE;
@@ -102,12 +103,18 @@ Public void spidrv_cyclic10ms(void)
         /* The device is configured as SPI slave, so we process commands. */
         if (spidrv_callback != NULL)
         {
-            spidrv_callback(priv_rx_data);
+            res = spidrv_callback(priv_rx_data);
         }
 
 #ifdef SPIDRV_DEBUG
-        /* TODO : Definitely disable this once done with initial testing. */
-        led_show_period(LED_TWO_BLUE, 200u);
+        if (res)
+        {
+            led_show_period(LED_TWO_BLUE, 200u);
+        }
+        else
+        {
+            led_show_period(LED_TWO_RED, 200u);
+        }
 #endif
     }
 }
