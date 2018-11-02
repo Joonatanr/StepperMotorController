@@ -199,7 +199,5 @@ void PORT6_IRQHandler(void)
     status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P6);
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P6, status);
 
-    led_show_period(LED_TWO_GREEN, 300u);
-
     setupTransfer();
 }

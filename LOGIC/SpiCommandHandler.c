@@ -18,7 +18,8 @@
 #define CMD_METADATA_LEN (CMD_HEADER_LEN + CMD_CHECKSUM_LEN)
 #define CMD_DATA_LEN SPI_COMMAND_LENGTH - CMD_METADATA_LEN
 
-#define CMD_PACKET_BEGIN 0xFFFEu
+#define CMD_PACKET_BEGIN_MSB 0xff
+#define CMD_PACKET_BEGIN_LSB 0xfe
 
 /* Connection to SPI driver. */
 Public SpiCommandHandlerFunc spidrv_callback = SpiCommandHandler_handleCommand;
@@ -96,7 +97,7 @@ Public Boolean SpiCommandHandler_handleCommand(U8 * message)
     /* Begin by looking for the packet beginning. */
     while (ix < (SPI_COMMAND_LENGTH - 2u))
     {
-        if ((message[ix] == (U8)CMD_PACKET_BEGIN >> 8u) && (message[ix + 1u] == (U8)CMD_PACKET_BEGIN & 0xffu))
+        if ((message[ix] == CMD_PACKET_BEGIN_MSB) && (message[ix + 1u] == CMD_PACKET_BEGIN_LSB))
         {
             packet_begin_ptr = &message[ix];
             break;
