@@ -213,6 +213,9 @@ Private void setResponse(U8 cmd_id, U8 sub, U8 resp_code, U16 response_data_len)
 
     packet_len += CMD_CHECKSUM_LEN;
 
+    //Add padding.
+    memset(priv_response_buffer + packet_len, 0xffu, SPI_COMMAND_LENGTH - packet_len);
+
     /* We should always send a response... */
     spidrv_setResponse(priv_response_buffer, packet_len);
 }
