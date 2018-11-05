@@ -18,10 +18,15 @@ typedef enum
     NUMBER_OF_SPI_COMMANDS
 } Spi_CommandId;
 
+
+/* TODO : This is preliminary, should add more response codes, checksum error, format error etc... */
 typedef enum
 {
-    SPI_RESPONSE_ACK,
-    SPI_RESPONSE_NACK,
+    SPI_RESPONSE_ACK,               //0x00
+    SPI_RESPONSE_NACK,              //0x01 - General Reject.
+    SPI_RESPONSE_UNKNOWN_CMD,       //0x02 - Command out of range.
+    SPI_RESPONSE_UNKNOWN_FORMAT,    //0x03 - Incorrect command format.
+    SPI_RESPONSE_CHECKSUM_ERROR,    //0x04 - Checksum error.
     NUMBER_OF_SPI_RESPONSE_CODES
 } Spi_ResponseCode;
 
