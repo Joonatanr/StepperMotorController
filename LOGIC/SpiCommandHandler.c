@@ -27,7 +27,7 @@ Public SpiCommandHandlerFunc spidrv_callback = SpiCommandHandler_handleCommand;
 
 /******************************************** Private type definitions **********************************/
 
-typedef Spi_ResponseCode (*CmdHandlerFunc)(U8 sub, const U8 * data, U8 * resp_len);
+typedef Spi_ResponseCode (*CmdHandlerFunc)(U8 sub, const U8 * data, U8 * resp_len, U8 * resp_data);
 
 typedef struct
 {
@@ -40,11 +40,11 @@ typedef struct
 
 Private U16 calculate_crc16(U16 crc, const U8* data, U32 len);
 Private Spi_ResponseCode handleCommand(U8 cmd_id, U8 sub, U8 * args, U8 args_len, U8 * resp_data_len);
-Private void setResponse(U8 cmd_id, U8 sub, Spi_ResponseCode resp_code ,U8 response_data_len);
+Private void setResponse(U8 cmd_id, U8 sub, U8 resp_code, U16 response_data_len);
 
 /* Command Handler functions */
-Private Spi_ResponseCode handleStatusReportCmd(U8 sub, const U8 *args, U8 * resp_len);
-Private Spi_ResponseCode handleStepperMotorSetCmd(U8 sub, const U8 * data, U8 * resp_len);
+Private Spi_ResponseCode handleStatusReportCmd(U8 sub, const U8 *args, U8 * resp_len, U8 * resp_data);
+Private Spi_ResponseCode handleStepperMotorSetCmd(U8 sub, const U8 * data, U8 * resp_len, U8 * resp_data);
 
 /**************************************** Private variable declarations **********************************************/
 
@@ -186,7 +186,7 @@ Public Boolean SpiCommandHandler_handleCommand(U8 * message)
 
 /******************************************* Private function definitions *******************************************/
 
-Private void setResponse(U8 cmd_id, U8 sub, Spi_ResponseCode resp_code, U8 response_data_len)
+Private void setResponse(U8 cmd_id, U8 sub, U8 resp_code, U16 response_data_len)
 {
     U16 packet_len;
     U16 checksum;
@@ -204,8 +204,6 @@ Private void setResponse(U8 cmd_id, U8 sub, Spi_ResponseCode resp_code, U8 respo
     priv_response_buffer[6] = (U8)resp_code;
 
     /* We assume that the data part of the command has already been copied to the buffer... */
-    /* TODO : This part should be reviewed... */
-
     packet_len = CMD_HEADER_LEN + response_data_len;
 
     /* Add checksum... */
@@ -239,7 +237,7 @@ Private Spi_ResponseCode handleCommand(U8 cmd_id, U8 sub, U8 * args, U8 args_len
 
     if (is_handled)
     {
-        resp_code = handler_ptr->func(sub, args, resp_data_len);
+        resp_code = handler_ptr->func(sub, args, resp_data_len, priv_response_buffer + CMD_HEADER_LEN);
     }
     else
     {
@@ -250,24 +248,24 @@ Private Spi_ResponseCode handleCommand(U8 cmd_id, U8 sub, U8 * args, U8 args_len
 }
 
 
-Private Spi_ResponseCode handleStatusReportCmd(U8 sub, const U8 *args, U8 * resp_len)
+Private Spi_ResponseCode handleStatusReportCmd(U8 sub, const U8 *args, U8 * resp_len, U8 * resp_data)
 {
     /* TODO : Implement this. */
 
     /* Currently stubbed... */
 
     /* Lets write 4 data bytes, just for testing. */
-    priv_response_buffer[7]     = 0xDEu;
-    priv_response_buffer[8]     = 0xADu;
-    priv_response_buffer[9]     = 0xBEu;
-    priv_response_buffer[10]    = 0xEFu;
+    resp_data[0]    = 0xDEu;
+    resp_data[1]    = 0xADu;
+    resp_data[2]    = 0xBEu;
+    resp_data[3]    = 0xEFu;
     *resp_len = 4u;
 
     return SPI_RESPONSE_ACK;
 }
 
 
-Private Spi_ResponseCode handleStepperMotorSetCmd(U8 sub, const U8 *data, U8 * resp_len)
+Private Spi_ResponseCode handleStepperMotorSetCmd(U8 sub, const U8 *data, U8 * resp_len, U8 * resp_data)
 {
     /* TODO : Implement this. */
     *resp_len = 0u;
