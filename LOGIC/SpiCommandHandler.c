@@ -7,6 +7,7 @@
 
 #include "SpiCommandHandler.h"
 #include "spidrv.h"
+#include "stepper.h"
 
 #define SPI_COMMAND_LENGTH MAP_SPI_MSG_LENGTH
 
@@ -31,8 +32,9 @@ typedef Spi_ResponseCode (*CmdHandlerFunc)(U8 sub, const U8 * data, U8 * resp_le
 
 typedef struct
 {
-    Spi_CommandId cmd_id;
-    CmdHandlerFunc func;
+    Spi_CommandId   cmd_id;
+    U16             arg_len;
+    CmdHandlerFunc  func;
 } cmdHandler_T;
 
 
@@ -91,8 +93,8 @@ Private U8 priv_response_buffer[SPI_COMMAND_LENGTH];
 
 Private const cmdHandler_T priv_cmd_handlers[] =
 {
-     { .cmd_id = (Spi_CommandId)0x01u, .func = handleStatusReportCmd       },
-     { .cmd_id = (Spi_CommandId)0x02u, .func = handleStepperMotorSetCmd    }
+     { .cmd_id = (Spi_CommandId)0x01u, .arg_len = 0u, .func = handleStatusReportCmd       },
+     { .cmd_id = (Spi_CommandId)0x02u, .arg_len = 8u, .func = handleStepperMotorSetCmd    }
 };
 
 
@@ -240,7 +242,14 @@ Private Spi_ResponseCode handleCommand(U8 cmd_id, U8 sub, U8 * args, U8 args_len
 
     if (is_handled)
     {
-        resp_code = handler_ptr->func(sub, args, resp_data_len, priv_response_buffer + CMD_HEADER_LEN);
+        if (args_len == handler_ptr->arg_len)
+        {
+            resp_code = handler_ptr->func(sub, args, resp_data_len, priv_response_buffer + CMD_HEADER_LEN);
+        }
+        else
+        {
+            resp_code = SPI_RESPONSE_UNKNOWN_FORMAT;
+        }
     }
     else
     {
@@ -270,9 +279,37 @@ Private Spi_ResponseCode handleStatusReportCmd(U8 sub, const U8 *args, U8 * resp
 
 Private Spi_ResponseCode handleStepperMotorSetCmd(U8 sub, const U8 *data, U8 * resp_len, U8 * resp_data)
 {
-    /* TODO : Implement this. */
-    *resp_len = 0u;
-    return SPI_RESPONSE_ACK;
+    U8 ix;
+    U16 motor_speed;
+    const U8 * data_ptr = data;
+    Spi_ResponseCode res = SPI_RESPONSE_ACK;
+
+    for (ix = 0u; ix < 4u; ix++)
+    {
+        if (sub & 0x01u)
+        {
+            motor_speed = *data_ptr << 8u;
+            motor_speed |= *(data_ptr + 1);
+            if (stepper_setSpeed(motor_speed, (Stepper_Id)ix) == FALSE)
+            {
+                res = SPI_RESPONSE_OOR;
+            }
+        }
+
+        data_ptr += 2;
+        sub = sub >> 1;
+    }
+
+    for (ix = 0u; ix < 4u; ix++)
+    {
+        motor_speed = stepper_getSpeed((Stepper_Id)ix);
+        resp_data[ix * 2] = (U8)(motor_speed << 8u);
+        resp_data[(ix * 2) + 1] = (U8)(motor_speed & 0xffu);
+    }
+
+    *resp_len = 8u;
+
+    return res;
 }
 
 

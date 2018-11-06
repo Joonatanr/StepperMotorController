@@ -27,6 +27,7 @@ typedef enum
     SPI_RESPONSE_UNKNOWN_CMD,       //0x02 - Command out of range.
     SPI_RESPONSE_UNKNOWN_FORMAT,    //0x03 - Incorrect command format.
     SPI_RESPONSE_CHECKSUM_ERROR,    //0x04 - Checksum error.
+    SPI_RESPONSE_OOR,               //0x05 - Out of range.
     NUMBER_OF_SPI_RESPONSE_CODES
 } Spi_ResponseCode;
 
