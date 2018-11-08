@@ -262,16 +262,26 @@ Private Spi_ResponseCode handleCommand(U8 cmd_id, U8 sub, U8 * args, U8 args_len
 
 Private Spi_ResponseCode handleStatusReportCmd(U8 sub, const U8 *args, U8 * resp_len, U8 * resp_data)
 {
-    /* TODO : Implement this. */
+    U8 ix;
+    Stepper_Query_t query;
+    U8 * data_ptr = resp_data;
+    U8 len = 0u;
 
-    /* Currently stubbed... */
+    for (ix = 0u; ix < NUMBER_OF_STEPPERS; ix++)
+    {
+        stepper_getState((Stepper_Id)ix, &query);
 
-    /* Lets write 4 data bytes, just for testing. */
-    resp_data[0]    = 0xDEu;
-    resp_data[1]    = 0xADu;
-    resp_data[2]    = 0xBEu;
-    resp_data[3]    = 0xEFu;
-    *resp_len = 4u;
+        data_ptr[0] = query.microstepping_mode;
+        data_ptr[1] = (U8)(query.interval >> 8u);
+        data_ptr[2] = (U8)(query.interval & 0xffu);
+        data_ptr[3] = (U8)(query.rpm >> 8u);
+        data_ptr[4] = (U8)(query.rpm & 0xffu);
+
+        data_ptr += 5;
+        len += 5u;
+    }
+
+    *resp_len = len;
 
     return SPI_RESPONSE_ACK;
 }
