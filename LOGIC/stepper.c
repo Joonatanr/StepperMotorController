@@ -190,7 +190,7 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
             GPIO_setOutputHighOnPin(priv_stepper_conf[id].sleep_pin.port, priv_stepper_conf[id].sleep_pin.pin);
         }
 
-        res = frequency_setFrequency(microsteps_per_minute, (frequency_Channel_t)id);
+        res = frequency_setStepsPerMinute(microsteps_per_minute, (frequency_Channel_t)id);
     }
 
     return res;
