@@ -13,8 +13,8 @@
 #include "math.h"
 
 
-#define STEPPER_TIMER_FREQUENCY 3000000u /* 3 MHz */
-#define STEPPER_ACCELERATION 2000 /* 2000 steps per second per second */
+#define STEPPER_TIMER_BASE_FREQUENCY 12000000u /* 12 MHz --- base frequency at 32 microsteps.       */
+#define STEPPER_BASE_ACCELERATION 4000         /* 4000 steps per second per second at 32 microsteps */
 
 
 typedef struct
@@ -29,6 +29,10 @@ typedef struct
 {
     U16               target_interval;
     U16               current_interval;
+
+    float             acceleration;     //In steps per second per second.
+    float             timer_frequency;  //In Hz
+
     float             calculated_interval;
     float             acceleration_constant; //m
 } FrequencyState_t;
@@ -45,9 +49,6 @@ Private const ChannelConfig_t   priv_freq_conf[FRQ_NUMBER_OF_CHANNELS] =
 Private Timer_A_PWMConfig       priv_freq_pwm_cfg[FRQ_NUMBER_OF_CHANNELS];
 Private FrequencyState_t        priv_freq_state[FRQ_NUMBER_OF_CHANNELS];
 
-/* TODO : This is currently experimental. */
-Private const float priv_calc_r = (float)STEPPER_ACCELERATION / ((float)STEPPER_TIMER_FREQUENCY * (float)STEPPER_TIMER_FREQUENCY);
-
 
 /* Initially lets just test this with a single channel... */
 Public void frequency_init(void)
@@ -58,7 +59,7 @@ Public void frequency_init(void)
     for (ix = 0u; ix < FRQ_NUMBER_OF_CHANNELS; ix++)
     {
         priv_freq_pwm_cfg[ix].clockSource = TIMER_A_CLOCKSOURCE_SMCLK;
-        priv_freq_pwm_cfg[ix].clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_4;
+        priv_freq_pwm_cfg[ix].clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1;
         priv_freq_pwm_cfg[ix].timerPeriod = 32000u; /* TODO : This is arbitrarily chosen, might not be necessary */
         priv_freq_pwm_cfg[ix].compareRegister = priv_freq_conf[ix].ccr;
         priv_freq_pwm_cfg[ix].compareOutputMode = TIMER_A_OUTPUTMODE_RESET_SET;
@@ -67,6 +68,8 @@ Public void frequency_init(void)
         priv_freq_state[ix].current_interval = 0u;
         priv_freq_state[ix].target_interval = 0u;
         priv_freq_state[ix].acceleration_constant = 0;
+        priv_freq_state[ix].acceleration = STEPPER_BASE_ACCELERATION;
+        priv_freq_state[ix].timer_frequency = STEPPER_TIMER_BASE_FREQUENCY;
     }
 
 
@@ -83,6 +86,72 @@ Public void frequency_init(void)
 }
 
 
+Public Boolean frequency_setMicroSteppingMode(U8 mode, frequency_Channel_t ch)
+{
+    Boolean res = TRUE;
+    Timer_A_PWMConfig * conf_ptr;
+    float acceleration;
+    float timer_frequency;
+
+    if(ch < FRQ_NUMBER_OF_CHANNELS)
+    {
+        return FALSE;
+    }
+
+    conf_ptr = &priv_freq_pwm_cfg[ch];
+
+    /* TODO : Take into account the use case, where we area currently accelerating. */
+
+    switch(mode)
+    {
+    case 1u:
+        conf_ptr->clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_32;
+        acceleration = STEPPER_BASE_ACCELERATION / 32u;
+        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 32u;
+        break;
+    case 2u:
+        conf_ptr->clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_16;
+        acceleration = STEPPER_BASE_ACCELERATION / 16u;
+        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 16u;
+        break;
+    case 4u:
+        conf_ptr->clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_8;
+        acceleration = STEPPER_BASE_ACCELERATION / 8u;
+        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 8u;
+        break;
+    case 8u:
+        conf_ptr->clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_4;
+        acceleration = STEPPER_BASE_ACCELERATION / 4u;
+        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 4u;
+        break;
+    case 16u:
+        conf_ptr->clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_2;
+        acceleration = STEPPER_BASE_ACCELERATION / 2u;
+        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 2u;
+        break;
+    case 32u:
+        conf_ptr->clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1;
+        acceleration = STEPPER_BASE_ACCELERATION / 4u;
+        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 4u;
+        break;
+    default:
+        res = FALSE;
+    }
+
+    if (res == TRUE)
+    {
+        priv_freq_state[ch].acceleration = acceleration;
+        priv_freq_state[ch].timer_frequency = timer_frequency;
+
+        if (priv_freq_state[ch].current_interval != 0u)
+        {
+            /* Update immediately. */
+            MAP_Timer_A_generatePWM(priv_freq_conf[ch].timer, conf_ptr);
+        }
+    }
+    return res;
+}
+
 /* We use steps per minute so we do not lose accuracy */
 Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Channel_t ch)
 {
@@ -94,8 +163,11 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
         float acceleration;
         float current_speed;
         float acceleration_constant;
+        float r_value;
 
-        target_interval = STEPPER_TIMER_FREQUENCY * 60u;
+        /* I think we don't need to take microstepping into account here, if steps_per_minute are always given as 32 microstep values.
+         * Target intervals area same anyway, so we can optimize here. */
+        target_interval = STEPPER_TIMER_BASE_FREQUENCY * 60u;
         target_interval = target_interval / steps_per_minute;
 
         if (target_interval > 0xffffu)
@@ -134,21 +206,23 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
         }
         else
         {
-            current_speed = STEPPER_TIMER_FREQUENCY / priv_freq_state[ch].current_interval; /* TODO : Make sure we also calculate this when reaching target interval. */
+            current_speed = priv_freq_state[ch].timer_frequency / priv_freq_state[ch].current_interval; /* TODO : Make sure we also calculate this when reaching target interval. */
         }
 
         /* TODO : This is experimental - also we do not take microstepping into account yet. */
         //1. Calculate first interval.
-        first_interval = (current_speed * current_speed) + 2 * (acceleration * STEPPER_ACCELERATION);
+        first_interval = (current_speed * current_speed) + 2 * (acceleration * priv_freq_state[ch].acceleration);
         first_interval = sqrt(first_interval);
-        first_interval = STEPPER_TIMER_FREQUENCY / first_interval;
+        first_interval = STEPPER_TIMER_BASE_FREQUENCY / first_interval;
 
-        acceleration_constant = acceleration * (-1) * priv_calc_r;
+        r_value = priv_freq_state[ch].acceleration / (priv_freq_state[ch].timer_frequency * priv_freq_state[ch].timer_frequency);
+        acceleration_constant = acceleration * (-1) * r_value;
 
         if (first_interval > 0xffff)
         {
             if (acceleration > 0)
             {
+                /* TODO : This solution is a placeholder, should replace with a pretty much immediate minimum speed. */
                 //We are accelerating. We immediately should give "minimum speed"
                 while(first_interval > 0xffff)
                 {

@@ -21,7 +21,7 @@ Private Boolean setStepperMicrostep(Stepper_Id id, U8 mode);
 
 #define DEFAULT_MICROSTEPPING_MODE 32u
 #define NUMBER_OF_FULL_STEPS_PER_ROUND 200u
-
+#define DEFAULT_STEPS_PER_ROUND DEFAULT_MICROSTEPPING_MODE * NUMBER_OF_FULL_STEPS_PER_ROUND
 
 typedef struct
 {
@@ -42,7 +42,6 @@ typedef struct
     const StepperConf_t *   conf;
 
     U8                      microstepping_mode;
-    U16                     microsteps_per_round;
     U16                     target_speed;
 } StepperState_T;
 
@@ -152,7 +151,6 @@ Public void stepper_init(void)
         {
             /* Ports are driven manually - assume default microstepping mode for calculations. */
             priv_stepper_state[stepper].microstepping_mode = DEFAULT_MICROSTEPPING_MODE;
-            priv_stepper_state[stepper].microsteps_per_round = priv_stepper_state[stepper].microstepping_mode * NUMBER_OF_FULL_STEPS_PER_ROUND;
         }
 
         priv_stepper_state[stepper].target_speed = 0u;
@@ -182,7 +180,7 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
     else if (rpm <= conf_ptr->max_speed)
     {
         state_ptr->target_speed = rpm;
-        microsteps_per_minute = rpm * state_ptr->microsteps_per_round;
+        microsteps_per_minute = rpm * DEFAULT_STEPS_PER_ROUND;
 
         //Wake up if sleeping.
         if (priv_stepper_conf[id].sleep_pin.port != 0)
@@ -230,7 +228,8 @@ Public Boolean stepper_setMicrosteppingMode(Stepper_Id id, U8 mode)
     if (setStepperMicrostep(id, mode))
     {
         //Update the speed calculation.
-        res = stepper_setSpeed(priv_stepper_state[id].target_speed, id);
+        //Not necessary with current implementation.
+        //res = stepper_setSpeed(priv_stepper_state[id].target_speed, id);
     }
 
     return res;
@@ -328,7 +327,7 @@ Private Boolean setStepperMicrostep(Stepper_Id id, U8 mode)
             ports_setPort(priv_stepper_conf[id].m2_pin.port, priv_stepper_conf[id].m2_pin.pin, m2_mode);
 
             priv_stepper_state[id].microstepping_mode = mode;
-            priv_stepper_state[id].microsteps_per_round = priv_stepper_state[id].microstepping_mode * NUMBER_OF_FULL_STEPS_PER_ROUND;
+            frequency_setMicroSteppingMode(mode, (frequency_Channel_t)id);
 
             res = TRUE;
         }
