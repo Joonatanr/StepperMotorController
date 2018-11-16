@@ -340,7 +340,10 @@ void TA0_N_IRQHandler(void)
         return;
     }
 
+    /* TODO : Add debug GPIO here. */
+    /* Currently this is only line with actual float calculations, might want to check how many cycles this actually takes... */
     new_interval = old_interval * (1 + (priv_freq_state[0].acceleration_constant * old_interval * old_interval));
+    /* TODO : Add debug GPIO here. */
 
     /* Check if we have reached the target... */
     if (new_interval > old_interval)
