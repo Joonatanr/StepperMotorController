@@ -84,9 +84,16 @@ Public void frequency_init(void)
                 GPIO_PRIMARY_MODULE_FUNCTION);
     }
 
-    /* Enable timer interrupt */
-    Timer_A_enableCaptureCompareInterrupt(TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+    /* Enable timer interrupts */
+    for (ix = 0u; ix < FRQ_NUMBER_OF_CHANNELS; ix++)
+    {
+        Timer_A_enableCaptureCompareInterrupt(priv_freq_conf[ix].timer, priv_freq_conf[ix].ccr);
+    }
+
     MAP_Interrupt_enableInterrupt(INT_TA0_N);
+    MAP_Interrupt_enableInterrupt(INT_TA1_N);
+    MAP_Interrupt_enableInterrupt(INT_TA2_N);
+    MAP_Interrupt_enableInterrupt(INT_TA3_N);
 }
 
 
@@ -385,12 +392,33 @@ Private void handleInterrupt(frequency_Channel_t ch)
 //******************************************************************************
 void TA0_N_IRQHandler(void)
 {
-    MAP_Timer_A_clearInterruptFlag(TIMER_A0_BASE);
-    Timer_A_clearCaptureCompareInterrupt(TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+    MAP_Timer_A_clearInterruptFlag(priv_freq_conf[FRQ_CH1].timer);
+    Timer_A_clearCaptureCompareInterrupt(priv_freq_conf[FRQ_CH1].timer, priv_freq_conf[FRQ_CH1].ccr);
 
     handleInterrupt(FRQ_CH1);
 }
 
-/* TODO : Handle other interrupts !!! */
+void TA1_N_IRQHandler(void)
+{
+    MAP_Timer_A_clearInterruptFlag(priv_freq_conf[FRQ_CH4].timer);
+    Timer_A_clearCaptureCompareInterrupt(priv_freq_conf[FRQ_CH4].timer, priv_freq_conf[FRQ_CH4].ccr);
 
+    handleInterrupt(FRQ_CH4);
+}
+
+void TA2_N_IRQHandler(void)
+{
+    MAP_Timer_A_clearInterruptFlag(priv_freq_conf[FRQ_CH2].timer);
+    Timer_A_clearCaptureCompareInterrupt(priv_freq_conf[FRQ_CH2].timer, priv_freq_conf[FRQ_CH2].ccr);
+
+    handleInterrupt(FRQ_CH2);
+}
+
+void TA3_N_IRQHandler(void)
+{
+    MAP_Timer_A_clearInterruptFlag(priv_freq_conf[FRQ_CH3].timer);
+    Timer_A_clearCaptureCompareInterrupt(priv_freq_conf[FRQ_CH3].timer, priv_freq_conf[FRQ_CH3].ccr);
+
+    handleInterrupt(FRQ_CH3);
+}
 
