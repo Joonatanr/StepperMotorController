@@ -16,6 +16,7 @@
 #define STEPPER_TIMER_BASE_FREQUENCY 12000000u /* 12 MHz --- base frequency at 32 microsteps.       */
 #define STEPPER_BASE_ACCELERATION 4000         /* 4000 steps per second per second at 32 microsteps */
 
+#define FRQ_MAX_INTERVAL 20000u /* This corresponds to slightly below 10RPM. */
 
 typedef struct
 {
@@ -52,6 +53,7 @@ Private const ChannelConfig_t   priv_freq_conf[FRQ_NUMBER_OF_CHANNELS] =
 
 Private Timer_A_PWMConfig       priv_freq_pwm_cfg[FRQ_NUMBER_OF_CHANNELS];
 Private FrequencyState_t        priv_freq_state[FRQ_NUMBER_OF_CHANNELS];
+
 
 
 /* Initially lets just test this with a single channel... */
@@ -176,6 +178,22 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
         float acceleration_constant;
         float r_value;
 
+        if (steps_per_minute == 0u)
+        {
+            /* We are being requested to go to a full stop. */
+            if (priv_freq_state[ch].current_interval == 0u)
+            {
+                /* We are already stopped so no problems... */
+                frequency_stopped_cb(ch);
+                return TRUE;
+            }
+            else
+            {
+                /* We order the stepper to decelerate into a "DEAD ZONE" */
+                steps_per_minute = FRQ_MAX_INTERVAL + 100u;
+            }
+        }
+
         /* I think we don't need to take microstepping into account here, if steps_per_minute are always given as 32 microstep values.
          * Target intervals area same anyway, so we can optimize here. */
         target_interval = STEPPER_TIMER_BASE_FREQUENCY * 60u;
@@ -192,6 +210,11 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
         {
             /* We are accelerating */
             acceleration = 1;
+            if (target_interval > FRQ_MAX_INTERVAL)
+            {
+                /* We are trying to accelerate into a "DEAD ZONE" */
+                return FALSE;
+            }
         }
         else if(priv_freq_state[ch].current_interval < target_interval)
         {
@@ -213,14 +236,14 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
         /* First we need to get the current actual speed of the motor. */
         if (priv_freq_state[ch].current_interval == 0u)
         {
-            current_speed = 0u;
+            //current_speed = 0u;
+            current_speed = priv_freq_state[ch].timer_frequency / FRQ_MAX_INTERVAL; //Lets see if we can use this approach to step up the speed in the beginning.
         }
         else
         {
             current_speed = priv_freq_state[ch].timer_frequency / priv_freq_state[ch].current_interval; /* TODO : Make sure we also calculate this when reaching target interval. */
         }
 
-        /* TODO : This is experimental - also we do not take microstepping into account yet. */
         //1. Calculate first interval.
         first_interval = (current_speed * current_speed) + 2 * (acceleration * priv_freq_state[ch].acceleration);
         first_interval = sqrt(first_interval);
@@ -242,7 +265,7 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
             }
             else
             {
-                //Curious case
+                //Curious case, should not really happen.
                 return FALSE;
             }
         }
@@ -347,7 +370,7 @@ Private void handleInterrupt(frequency_Channel_t ch)
 
         /* TODO : Add debug GPIO here. */
         /* Currently this is only line with actual float calculations, might want to check how many cycles this actually takes... */
-        new_interval = old_interval * (1 + (priv_freq_state[0].acceleration_constant * old_interval * old_interval));
+        new_interval = old_interval * (1 + (priv_freq_state[ch].acceleration_constant * old_interval * old_interval));
         /* TODO : Add debug GPIO here. */
 
         /* Check if we have reached the target... */
@@ -373,15 +396,23 @@ Private void handleInterrupt(frequency_Channel_t ch)
         priv_freq_state[ch].calculated_interval = new_interval; //We also have to keep track of the calculated float value.
         priv_freq_state[ch].current_interval = (U32)new_interval;
 
-        /*
-        TA0CCR0 = priv_freq_state[ch].current_interval;
-        TA0CCR1 = priv_freq_state[ch].current_interval / 2;
-        */
-
-        /* This part got pretty much copied from driverlib. We need to have fast access here... */
-        TIMER_A_CMSIS(priv_freq_conf[ch].timer)->CCR[0] = priv_freq_state[ch].current_interval;
-        uint8_t idx = (priv_freq_conf[ch].ccr >> 1) - 1;
-        TIMER_A_CMSIS(priv_freq_conf[ch].timer)->CCR[idx] = priv_freq_state[ch].current_interval / 2;
+        if (new_interval > FRQ_MAX_INTERVAL)
+        {
+            /* Stop the stepper... */
+            frequency_setEnable(FALSE, ch);
+            /* Fire the callback. */
+            if (frequency_stopped_cb != NULL)
+            {
+                frequency_stopped_cb(ch);
+            }
+        }
+        else
+        {
+            /* This part got pretty much copied from driverlib. We need to have fast access here... */
+            TIMER_A_CMSIS(priv_freq_conf[ch].timer)->CCR[0] = priv_freq_state[ch].current_interval;
+            uint8_t idx = (priv_freq_conf[ch].ccr >> 1) - 1;
+            TIMER_A_CMSIS(priv_freq_conf[ch].timer)->CCR[idx] = priv_freq_state[ch].current_interval / 2;
+        }
     }
 }
 

@@ -19,13 +19,16 @@ typedef enum
     FRQ_NUMBER_OF_CHANNELS
 } frequency_Channel_t;
 
-extern void frequency_init(void);
+typedef void (*Frequency_StoppedCallback)(frequency_Channel_t ch);
 
+extern Frequency_StoppedCallback frequency_stopped_cb;
+
+
+extern void frequency_init(void);
 extern Boolean frequency_setStepsPerMinute(U32 frequency, frequency_Channel_t ch);
 extern Boolean frequency_setMicroSteppingMode(U8 mode, frequency_Channel_t ch);
 extern Boolean frequency_setInterval(U32 interval, frequency_Channel_t ch);
 extern void frequency_setEnable(Boolean mode, frequency_Channel_t ch);
-
 extern U16 frequency_getInterval(frequency_Channel_t ch);
 
 

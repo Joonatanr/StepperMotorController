@@ -13,11 +13,13 @@
 
 /************************** Private function forward declarations *****************************/
 
+Private void StepperStopCompleteCallback(frequency_Channel_t ch);
 Private void stopStepper(Stepper_Id id);
 Private Boolean setStepperMicrostep(Stepper_Id id, U8 mode);
 
 /***************************Private variable declarations *************************************/
 
+Public Frequency_StoppedCallback frequency_stopped_cb = StepperStopCompleteCallback;
 
 #define DEFAULT_MICROSTEPPING_MODE 32u
 #define NUMBER_OF_FULL_STEPS_PER_ROUND 200u
@@ -254,16 +256,23 @@ Public Boolean stepper_getState(Stepper_Id id, Stepper_Query_t * res)
 
 /********************* Private function definitions ******************************************/
 
+/* This is called to stop a stepper motor. */
 Private void stopStepper(Stepper_Id id)
 {
-    /* TODO : Should also drive enable, sleep pins etc. */
-    if (priv_stepper_conf[id].sleep_pin.port != 0)
-    {
-        GPIO_setOutputLowOnPin(priv_stepper_conf[id].sleep_pin.port, priv_stepper_conf[id].sleep_pin.pin);
-    }
-
-    frequency_setEnable(FALSE, priv_stepper_conf[id].frq_ch);
+    frequency_setStepsPerMinute(0u, (frequency_Channel_t)id);
     priv_stepper_state[id].target_speed = 0u;
+}
+
+
+/* This is called when a stepper motor has reached zero speed through the frequency module...
+ * Implementation is not ideal, but will do for now. */
+Private void StepperStopCompleteCallback(frequency_Channel_t ch)
+{
+    /* TODO : Should also drive enable, sleep pins etc. */
+    if (priv_stepper_conf[ch].sleep_pin.port != 0)
+    {
+        GPIO_setOutputLowOnPin(priv_stepper_conf[ch].sleep_pin.port, priv_stepper_conf[ch].sleep_pin.pin);
+    }
 }
 
 
