@@ -37,6 +37,10 @@ typedef struct
     float             acceleration_constant; //m
 } FrequencyState_t;
 
+/*************************** Private function forward declarations ********************************/
+Private void handleInterrupt(frequency_Channel_t ch);
+
+/************************** Private variable declarations *********************/
 Private const ChannelConfig_t   priv_freq_conf[FRQ_NUMBER_OF_CHANNELS] =
 {
      { TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1, GPIO_PORT_P2, GPIO_PIN4 },
@@ -322,6 +326,58 @@ Public U16 frequency_getInterval(frequency_Channel_t ch)
 }
 
 
+Private void handleInterrupt(frequency_Channel_t ch)
+{
+    if (ch < FRQ_NUMBER_OF_CHANNELS)
+    {
+        float new_interval;
+        float old_interval = priv_freq_state[ch].calculated_interval;
+
+        if (priv_freq_state[ch].current_interval == priv_freq_state[ch].target_interval)
+        {
+            return;
+        }
+
+        /* TODO : Add debug GPIO here. */
+        /* Currently this is only line with actual float calculations, might want to check how many cycles this actually takes... */
+        new_interval = old_interval * (1 + (priv_freq_state[0].acceleration_constant * old_interval * old_interval));
+        /* TODO : Add debug GPIO here. */
+
+        /* Check if we have reached the target... */
+        if (new_interval > old_interval)
+        {
+            //Decelerating...
+            if (new_interval > priv_freq_state[ch].target_interval)
+            {
+                new_interval = priv_freq_state[ch].target_interval;
+                priv_freq_state[ch].acceleration_constant = 0;
+            }
+        }
+        else if (new_interval < old_interval)
+        {
+            //Accelerating...
+            if (new_interval < priv_freq_state[ch].target_interval)
+            {
+                new_interval = priv_freq_state[ch].target_interval;
+                priv_freq_state[ch].acceleration_constant = 0;
+            }
+        }
+
+        priv_freq_state[ch].calculated_interval = new_interval; //We also have to keep track of the calculated float value.
+        priv_freq_state[ch].current_interval = (U32)new_interval;
+
+        /*
+        TA0CCR0 = priv_freq_state[ch].current_interval;
+        TA0CCR1 = priv_freq_state[ch].current_interval / 2;
+        */
+
+        /* This part got pretty much copied from driverlib. We need to have fast access here... */
+        TIMER_A_CMSIS(priv_freq_conf[ch].timer)->CCR[0] = priv_freq_state[ch].current_interval;
+        uint8_t idx = (priv_freq_conf[ch].ccr >> 1) - 1;
+        TIMER_A_CMSIS(priv_freq_conf[ch].timer)->CCR[idx] = priv_freq_state[ch].current_interval / 2;
+    }
+}
+
 //******************************************************************************
 //
 //This is the TIMERA interrupt vector service routine.
@@ -329,47 +385,10 @@ Public U16 frequency_getInterval(frequency_Channel_t ch)
 //******************************************************************************
 void TA0_N_IRQHandler(void)
 {
-    float new_interval;
-    float old_interval = priv_freq_state[0].calculated_interval;
-
     MAP_Timer_A_clearInterruptFlag(TIMER_A0_BASE);
     Timer_A_clearCaptureCompareInterrupt(TIMER_A0_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
 
-    if (priv_freq_state[0].current_interval == priv_freq_state[0].target_interval)
-    {
-        return;
-    }
-
-    /* TODO : Add debug GPIO here. */
-    /* Currently this is only line with actual float calculations, might want to check how many cycles this actually takes... */
-    new_interval = old_interval * (1 + (priv_freq_state[0].acceleration_constant * old_interval * old_interval));
-    /* TODO : Add debug GPIO here. */
-
-    /* Check if we have reached the target... */
-    if (new_interval > old_interval)
-    {
-        //Decelerating...
-        if (new_interval > priv_freq_state[0].target_interval)
-        {
-            new_interval = priv_freq_state[0].target_interval;
-            priv_freq_state[0].acceleration_constant = 0;
-        }
-    }
-    else if (new_interval < old_interval)
-    {
-        //Accelerating...
-        if (new_interval < priv_freq_state[0].target_interval)
-        {
-            new_interval = priv_freq_state[0].target_interval;
-            priv_freq_state[0].acceleration_constant = 0;
-        }
-    }
-
-    priv_freq_state[0].calculated_interval = new_interval; //We also have to keep track of the calculated float value.
-    priv_freq_state[0].current_interval = (U32)new_interval;
-
-    TA0CCR0 = priv_freq_state[0].current_interval;
-    TA0CCR1 = priv_freq_state[0].current_interval / 2;
+    handleInterrupt(FRQ_CH1);
 }
 
 /* TODO : Handle other interrupts !!! */
