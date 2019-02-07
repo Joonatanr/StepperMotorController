@@ -277,7 +277,6 @@ Private Boolean HandleCommandMicroStepSet(Stepper_Id id, int arg)
 /* Appends to the end of an existing response string. */
 /* If there is no more room, then we simply cut off the string.     */
 /* This function also keeps track of the remaining buffer length.   */
-/* TODO : Test this. */
 Private Boolean appendResponse(const char * resp)
 {
     U16 resp_len;

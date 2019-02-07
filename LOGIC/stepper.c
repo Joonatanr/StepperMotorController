@@ -36,6 +36,7 @@ typedef struct
 
     frequency_Channel_t frq_ch;
     const U16           max_speed;          //  In RPM
+    const U16           min_speed;          //  In RPM
 } StepperConf_t;
 
 
@@ -59,7 +60,8 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
        .m2_pin =    { GPIO_PORT_P1, GPIO_PIN6 },
 
        .frq_ch = FRQ_CH1,
-       .max_speed = 1000u
+       .max_speed = 300u,
+       .min_speed = 5u
      },
 
      { /* Stepper 1 */
@@ -69,6 +71,8 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
        .m0_pin    = { GPIO_PORT_P1, GPIO_PIN7 },
        .m1_pin    = { GPIO_PORT_P5, GPIO_PIN0 },
        .m2_pin    = { GPIO_PORT_P5, GPIO_PIN2 },
+
+       /* TODO : Check that this works and remove. */
 /*
        .m0_pin =    { GPIO_PORT_P3, GPIO_PIN7 },
        .m1_pin =    { GPIO_PORT_P3, GPIO_PIN5 },
@@ -76,7 +80,8 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
 */
 
        .frq_ch = FRQ_CH2,
-       .max_speed = 1000u
+       .max_speed = 300u,
+       .min_speed = 5u
      },
 
      { /* Stepper 2 */
@@ -88,7 +93,8 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
        .m2_pin =    { GPIO_PORT_P5, GPIO_PIN5 },
 
        .frq_ch = FRQ_CH3,
-       .max_speed = 1000u
+       .max_speed = 300u,
+       .min_speed = 5u
      },
 
      { /* Stepper 3 */
@@ -100,7 +106,8 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
        .m2_pin =    { 0u, 0u },
 
        .frq_ch = FRQ_CH4,
-       .max_speed = 1000u
+       .max_speed = 300u,
+       .min_speed = 5u
      }
 };
 
@@ -179,7 +186,7 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
         stopStepper(id);
         res = TRUE;
     }
-    else if (rpm <= conf_ptr->max_speed)
+    else if ((rpm <= conf_ptr->max_speed) && (rpm >= conf_ptr->min_speed))
     {
         state_ptr->target_speed = rpm;
         microsteps_per_minute = rpm * DEFAULT_STEPS_PER_ROUND;
@@ -190,7 +197,7 @@ Public Boolean stepper_setSpeed(U32 rpm, Stepper_Id id)
             GPIO_setOutputHighOnPin(priv_stepper_conf[id].sleep_pin.port, priv_stepper_conf[id].sleep_pin.pin);
         }
 
-        res = frequency_setStepsPerMinute(microsteps_per_minute, (frequency_Channel_t)id);
+        res = frequency_setStepsPerMinute(microsteps_per_minute, priv_stepper_conf[id].frq_ch);
     }
 
     return res;
@@ -225,16 +232,7 @@ Public Boolean stepper_setTimerValue(U32 value, Stepper_Id id)
 
 Public Boolean stepper_setMicrosteppingMode(Stepper_Id id, U8 mode)
 {
-    Boolean res = FALSE;
-
-    if (setStepperMicrostep(id, mode))
-    {
-        //Update the speed calculation.
-        //Not necessary with current implementation.
-        //res = stepper_setSpeed(priv_stepper_state[id].target_speed, id);
-    }
-
-    return res;
+    return setStepperMicrostep(id, mode);
 }
 
 
@@ -344,7 +342,5 @@ Private Boolean setStepperMicrostep(Stepper_Id id, U8 mode)
 
     return res;
 }
-
-
 
 

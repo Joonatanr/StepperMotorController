@@ -144,8 +144,8 @@ Public Boolean frequency_setMicroSteppingMode(U8 mode, frequency_Channel_t ch)
         break;
     case 32u:
         conf_ptr->clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1;
-        acceleration = STEPPER_BASE_ACCELERATION / 4u;
-        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 4u;
+        acceleration = STEPPER_BASE_ACCELERATION / 4u; /* TODO : This is probably a bug...... */
+        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 4u; /* TODO : FIX THIS ASAP, BUT MUST TEST FIRST. CURRENTLY EVERYTHING WORKS WITH 32 MICROSTEPS, BUT IT PROBABLY MEANS OTHERS ARE BROKEN. */
         break;
     default:
         res = FALSE;
@@ -168,6 +168,8 @@ Public Boolean frequency_setMicroSteppingMode(U8 mode, frequency_Channel_t ch)
 /* We use steps per minute so we do not lose accuracy */
 Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Channel_t ch)
 {
+    Boolean res;
+
     if (ch < FRQ_NUMBER_OF_CHANNELS)
     {
         //Calculate target interval.
@@ -227,11 +229,7 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
             return TRUE;
         }
 
-        /* TODO : Also add some value range checks... */
-
         /* Idea is that all more complex calculations should be done here. */
-        /* TODO : Analyze situation where stepper actually is accelerating previously when these calculations are done...
-         * Probably need critical section here (stepper will hopefully still keep turning :) ) */
 
         /* First we need to get the current actual speed of the motor. */
         if (priv_freq_state[ch].current_interval == 0u)
@@ -256,8 +254,7 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
         {
             if (acceleration > 0)
             {
-                /* TODO : This solution is a placeholder, should replace with a pretty much immediate minimum speed. */
-                //We are accelerating. We immediately should give "minimum speed"
+                /* This is just an extra check so the motor will start running even if we get some bad calculations before. */
                 while(first_interval > 0xffff)
                 {
                     first_interval = first_interval * (1 + (acceleration_constant * first_interval * first_interval));
@@ -271,17 +268,14 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
         }
 
         //2. Set target interval and other variables.
+
         priv_freq_state[ch].target_interval = target_interval;
         priv_freq_state[ch].acceleration_constant = acceleration_constant;
         priv_freq_state[ch].calculated_interval = first_interval;
         Interrupt_enableMaster(); //End critical section.
 
-
         //3. Begin with first interval.
-        /* TODO : What if this fails??? */
-        frequency_setInterval((U32)first_interval, ch);
-
-        return TRUE;
+        return frequency_setInterval((U32)first_interval, ch);
     }
     else
     {
@@ -368,10 +362,8 @@ Private void handleInterrupt(frequency_Channel_t ch)
             return;
         }
 
-        /* TODO : Add debug GPIO here. */
         /* Currently this is only line with actual float calculations, might want to check how many cycles this actually takes... */
         new_interval = old_interval * (1 + (priv_freq_state[ch].acceleration_constant * old_interval * old_interval));
-        /* TODO : Add debug GPIO here. */
 
         /* Check if we have reached the target... */
         if (new_interval > old_interval)
