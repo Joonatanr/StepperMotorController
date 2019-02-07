@@ -272,10 +272,12 @@ Public Boolean frequency_setStepsPerMinute(U32 steps_per_minute, frequency_Chann
         priv_freq_state[ch].target_interval = target_interval;
         priv_freq_state[ch].acceleration_constant = acceleration_constant;
         priv_freq_state[ch].calculated_interval = first_interval;
-        Interrupt_enableMaster(); //End critical section.
 
         //3. Begin with first interval.
-        return frequency_setInterval((U32)first_interval, ch);
+        res = frequency_setInterval((U32)first_interval, ch);
+
+        Interrupt_enableMaster(); //End critical section.
+        return res;
     }
     else
     {
