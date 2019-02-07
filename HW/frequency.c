@@ -14,7 +14,7 @@
 
 
 #define STEPPER_TIMER_BASE_FREQUENCY 12000000u /* 12 MHz --- base frequency at 32 microsteps.       */
-#define STEPPER_BASE_ACCELERATION 4000         /* 4000 steps per second per second at 32 microsteps */
+#define STEPPER_BASE_ACCELERATION 2000         /* 4000 steps per second per second at 32 microsteps */
 
 #define FRQ_MAX_INTERVAL 20000u /* This corresponds to slightly below 10RPM. */
 
@@ -144,8 +144,8 @@ Public Boolean frequency_setMicroSteppingMode(U8 mode, frequency_Channel_t ch)
         break;
     case 32u:
         conf_ptr->clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1;
-        acceleration = STEPPER_BASE_ACCELERATION / 4u; /* TODO : This is probably a bug...... */
-        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY / 4u; /* TODO : FIX THIS ASAP, BUT MUST TEST FIRST. CURRENTLY EVERYTHING WORKS WITH 32 MICROSTEPS, BUT IT PROBABLY MEANS OTHERS ARE BROKEN. */
+        acceleration = STEPPER_BASE_ACCELERATION;
+        timer_frequency = STEPPER_TIMER_BASE_FREQUENCY;
         break;
     default:
         res = FALSE;

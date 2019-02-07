@@ -60,7 +60,7 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
        .m2_pin =    { GPIO_PORT_P1, GPIO_PIN6 },
 
        .frq_ch = FRQ_CH1,
-       .max_speed = 300u,
+       .max_speed = 1000u,
        .min_speed = 5u
      },
 
@@ -80,7 +80,7 @@ Private const StepperConf_t priv_stepper_conf[NUMBER_OF_STEPPERS] =
 */
 
        .frq_ch = FRQ_CH2,
-       .max_speed = 300u,
+       .max_speed = 500u,
        .min_speed = 5u
      },
 
